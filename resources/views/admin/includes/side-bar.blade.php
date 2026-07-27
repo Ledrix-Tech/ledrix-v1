@@ -1,0 +1,124 @@
+@php
+    $route = request()->route()?->getName() ?? '';
+    $user = Auth::guard('admin')->user() ?? Auth::guard('seller')->user();
+@endphp
+<aside class="crm-sidebar" id="crmSidebar">
+    <div class="crm-sidebar-brand-dots">
+        <span class="crm-dot crm-dot-purple" title="Ledrix"></span>
+        <span class="crm-dot crm-dot-green" title="Ledrix"></span>
+    </div>
+    <div class="crm-sidebar-tagline">CRM Workspace</div>
+
+    <ul class="crm-nav">
+        <li class="crm-nav-label">Menu</li>
+
+        @if (isFinance())
+            <li>
+                <a class="crm-nav-link {{ $route === 'admin.brand-payments.get' ? 'active' : '' }}"
+                    href="{{ route('admin.brand-payments.get') }}">
+                    <i class="bi bi-credit-card"></i><span>Brand Payments</span>
+                </a>
+            </li>
+            <li>
+                <a class="crm-nav-link {{ $route === 'admin.brand-payouts.get' ? 'active' : '' }}"
+                    href="{{ route('admin.brand-payouts.get') }}">
+                    <i class="bi bi-cash-stack"></i><span>Brand Payouts</span>
+                </a>
+            </li>
+        @else
+            <li>
+                <a class="crm-nav-link {{ $route === 'admin.index.get' ? 'active' : '' }}"
+                    href="{{ route('admin.index.get') }}">
+                    <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                </a>
+            </li>
+            @if (isAdmin())
+                <li>
+                    <a class="crm-nav-link {{ $route === 'admin.account-keys.get' ? 'active' : '' }}"
+                        href="{{ route('admin.account-keys.get') }}">
+                        <i class="bi bi-key"></i><span>Account Keys</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="crm-nav-link {{ $route === 'admin.domain-script.get' ? 'active' : '' }}"
+                        href="{{ route('admin.domain-script.get') }}">
+                        <i class="bi bi-code-slash"></i><span>Script</span>
+                    </a>
+                </li>
+            @endif
+            <li>
+                <a class="crm-nav-link {{ $route === 'admin.clients.get' ? 'active' : '' }}"
+                    href="{{ route('admin.clients.get') }}">
+                    <i class="bi bi-people"></i><span>Clients</span>
+                </a>
+            </li>
+            @if (isAdmin())
+                <li>
+                    <a class="crm-nav-link {{ $route === 'admin.brands.get' ? 'active' : '' }}"
+                        href="{{ route('admin.brands.get') }}">
+                        <i class="bi bi-globe"></i><span>Brands</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="crm-nav-link {{ $route === 'admin.sellers.get' ? 'active' : '' }}"
+                        href="{{ route('admin.sellers.get') }}">
+                        <i class="bi bi-person-badge"></i><span>Sellers</span>
+                    </a>
+                </li>
+            @endif
+
+            @if (isProjectManager())
+                <li>
+                    <a class="crm-nav-link {{ $route === 'admin.assigned-leads.get' ? 'active' : '' }}"
+                        href="{{ route('admin.assigned-leads.get') }}">
+                        <i class="bi bi-basket"></i><span>Assigned Leads</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="crm-nav-link {{ in_array($route, ['admin.assigned-leads-orders.get', 'admin.renewed-orders.get']) ? 'active' : '' }}"
+                        href="{{ route('admin.assigned-leads-orders.get') }}">
+                        <i class="bi bi-receipt"></i><span>Orders</span>
+                    </a>
+                </li>
+            @else
+                <li>
+                    <a class="crm-nav-link {{ in_array($route, ['admin.leads.get', 'admin.lead-details.get']) ? 'active' : '' }}"
+                        href="{{ route('admin.leads.get') }}">
+                        <i class="bi bi-funnel"></i><span>Leads</span>
+                    </a>
+                </li>
+                @if (isAdmin())
+                    <li>
+                        <a class="crm-nav-link {{ in_array($route, ['admin.orders.get', 'admin.renewed-orders.get']) ? 'active' : '' }}"
+                            href="{{ route('admin.orders.get') }}">
+                            <i class="bi bi-receipt"></i><span>Orders</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="crm-nav-link {{ $route === 'admin.payments.get' ? 'active' : '' }}"
+                            href="{{ route('admin.payments.get') }}">
+                            <i class="bi bi-wallet2"></i><span>Payments</span>
+                        </a>
+                    </li>
+                @else
+                    <li>
+                        <a class="crm-nav-link {{ in_array($route, ['admin.assigned-leads-orders.get', 'admin.renewed-orders.get']) ? 'active' : '' }}"
+                            href="{{ route('admin.assigned-leads-orders.get') }}">
+                            <i class="bi bi-receipt"></i><span>Orders</span>
+                        </a>
+                    </li>
+                @endif
+            @endif
+        @endif
+    </ul>
+
+    <div class="crm-sidebar-footer">
+        <div class="crm-sidebar-user">
+            <i class="bi bi-person-circle"></i>
+            <div>
+                <strong>{{ ucfirst($user->name ?? 'Guest') }}</strong><br>
+                <small>{{ ucfirst($user->role ?? 'User') }}</small>
+            </div>
+        </div>
+    </div>
+</aside>

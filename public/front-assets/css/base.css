@@ -1,0 +1,161 @@
+/* Ledrix front layout: navbar, footer, shared tenant portal shells */
+* {
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    background: linear-gradient(135deg, #e0f7fa, #fce4ec);
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.smart-navbar {
+    position: fixed;
+    top: -80px;
+    left: 0;
+    width: 100%;
+    z-index: 1030;
+    transition: top 0.3s ease;
+}
+
+.smart-navbar.scrolled {
+    top: 0;
+}
+
+.navbar {
+    background-color: #ffffff;
+    backdrop-filter: blur(8px);
+    position: sticky;
+    color: black !important;
+}
+
+.navbar-brand {
+    width: 170px;
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+.navbar-brand img {
+    width: 100%;
+}
+
+.nav-item .nav-link {
+    color: black !important;
+}
+
+.hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+        url('https://www.phpuncle.com/wp-content/uploads/crm-software.jpg') no-repeat center center;
+    background-size: cover;
+    color: #fff;
+    text-align: center;
+    height: 550px;
+    padding: 110px 20px;
+    border-radius: 0 0 30px 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.hero h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+    font-size: 1.3rem;
+}
+
+.card-body ul {
+    padding-left: 1.2rem;
+}
+
+.btn-primary {
+    background: linear-gradient(to right, #3ecaca, #7400b8);
+    border: none;
+    border-radius: 30px;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(to right, #5f00a3, #3ecaca);
+}
+
+@media (max-width: 767px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+}
+
+.navbar-brand-footer img {
+    max-width: 140px;
+    height: auto;
+    display: block;
+}
+
+.mkt-footer-social {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.mkt-footer-social-link {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    font-size: 1rem;
+    text-decoration: none;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.mkt-footer-social-link:hover {
+    transform: translateY(-2px);
+    color: #fff !important;
+}
+
+.mkt-footer-social-link--facebook:hover {
+    background: #1877f2;
+    border-color: #1877f2;
+}
+
+.mkt-footer-social-link--instagram:hover {
+    background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af);
+    border-color: #dd2a7b;
+}
+
+.mkt-footer-social-link--linkedin:hover {
+    background: #0a66c2;
+    border-color: #0a66c2;
+}
+
+.footer {
+    background-color: #000;
+    color: #fff;
+    font-size: 0.9rem;
+}

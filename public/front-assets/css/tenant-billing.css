@@ -1,0 +1,209 @@
+/* Tenant billing page — Ledrix brand (#4438c9, #8b52fe, #04be63) */
+
+.tenant-billing-page .hero {
+    min-height: 200px;
+    height: auto;
+    padding: 4rem 1.25rem 3rem;
+    border-radius: 0 0 24px 24px;
+}
+
+.tenant-billing-page .card {
+    transform: none !important;
+}
+
+.tenant-billing-page .card:hover {
+    transform: none !important;
+}
+
+.tenant-billing-page .billing-card {
+    background: #fff;
+    border: 1px solid rgba(68, 56, 201, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(68, 56, 201, 0.06);
+    overflow: hidden;
+}
+
+.tenant-billing-page .billing-card__head {
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #4438c9 0%, #8b52fe 100%);
+}
+
+.tenant-billing-page .billing-card__head--dark {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+}
+
+.tenant-billing-page .billing-card__body {
+    padding: 1.25rem;
+}
+
+.tenant-billing-page .billing-stat {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.tenant-billing-page .billing-stat:last-child {
+    border-bottom: 0;
+}
+
+.tenant-billing-page .billing-stat__label {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.tenant-billing-page .billing-stat__value {
+    font-weight: 600;
+    color: #0f172a;
+    text-align: right;
+}
+
+.tenant-billing-page .billing-price {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #4438c9;
+    line-height: 1.1;
+}
+
+.tenant-billing-page .billing-price small {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.tenant-billing-page .billing-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.tenant-billing-page .billing-status--trial {
+    background: rgba(139, 82, 254, 0.12);
+    color: #6d28d9;
+}
+
+.tenant-billing-page .billing-status--active {
+    background: rgba(4, 190, 99, 0.12);
+    color: #047857;
+}
+
+.tenant-billing-page .billing-status--due {
+    background: rgba(245, 158, 11, 0.15);
+    color: #b45309;
+}
+
+.tenant-billing-page .btn-billing {
+    background: linear-gradient(135deg, #4438c9 0%, #8b52fe 100%);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 600;
+    padding: 0.85rem 1.5rem;
+    box-shadow: 0 8px 20px rgba(68, 56, 201, 0.25);
+}
+
+.tenant-billing-page .btn-billing:hover {
+    background: linear-gradient(135deg, #3b31b0 0%, #7c4de8 100%);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.tenant-billing-page .billing-pay-box {
+    background: linear-gradient(180deg, #fafaff 0%, #fff 100%);
+    border: 1px solid rgba(68, 56, 201, 0.12);
+    border-radius: 14px;
+    padding: 1.25rem;
+}
+
+.tenant-billing-page .billing-jazzcash-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 1rem;
+}
+
+.tenant-billing-page .billing-jazzcash-mark img,
+.tenant-billing-page .billing-jazzcash-mark i {
+    font-size: 1.1rem;
+    color: #4438c9;
+}
+
+.tenant-billing-page .billing-sandbox-note {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    font-size: 0.82rem;
+    color: #475569;
+}
+
+.tenant-billing-page .billing-pending {
+    border-left: 4px solid #f59e0b;
+    background: #fffbeb;
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    margin-bottom: 1rem;
+}
+
+.tenant-billing-page .billing-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #64748b;
+}
+
+.tenant-billing-page .billing-empty i {
+    font-size: 2rem;
+    color: #04be63;
+    margin-bottom: 0.75rem;
+}
+
+.tenant-billing-page .form-check-input:checked {
+    background-color: #4438c9;
+    border-color: #4438c9;
+}
+
+.tenant-billing-page .billing-card__head--muted {
+    background: linear-gradient(135deg, #475569 0%, #64748b 100%);
+}
+
+.tenant-billing-page .billing-bank-details {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+}
+
+.tenant-billing-page .billing-bank-details .billing-stat:last-child {
+    border-bottom: 0;
+}
+
+.tenant-billing-page .billing-qr-wrap {
+    padding: 1rem;
+    background: #fff;
+    border: 1px dashed rgba(68, 56, 201, 0.25);
+    border-radius: 14px;
+}
+
+.tenant-billing-page .billing-qr-image {
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.tenant-billing-page .billing-report-form .form-control {
+    border-radius: 10px;
+}
+
+@media (max-width: 991px) {
+    .tenant-billing-page .billing-price {
+        font-size: 1.65rem;
+    }
+}

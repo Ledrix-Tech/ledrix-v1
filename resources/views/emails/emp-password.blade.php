@@ -1,0 +1,1 @@
+@extends('emails.client-password')

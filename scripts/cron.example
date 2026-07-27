@@ -1,0 +1,12 @@
+# Ledrix — add this single line to the server crontab (crontab -e)
+# Replace /path/to/ledrix with your project root (where artisan lives).
+
+* * * * * cd /path/to/ledrix && php artisan schedule:run >> /path/to/ledrix/storage/logs/scheduler.log 2>&1
+
+# What this does (via routes/console.php):
+#   - Every minute: process queued jobs (emails, notifications)
+#   - Hourly: leads:auto-reply
+#   - Every 15 min: tickets:deadline-check
+#   - Daily: predict:churn, tenant trials, JazzCash renewals
+#
+# After each deploy, run: bash scripts/post-deploy.sh

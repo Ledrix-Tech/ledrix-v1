@@ -1,0 +1,92 @@
+/* Client portal — shared Ledrix CRM theme; client-specific tweaks only */
+
+.crm-sidebar-tagline {
+    letter-spacing: 0.08em;
+}
+
+/* Full-width dashboard KPIs (3 cards) */
+.crm-main .crm-dash-kpis {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 992px) {
+    .crm-main .crm-dash-kpis {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .crm-main .crm-dash-kpis {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Full-width content inside col-12 */
+.crm-main > .container-fluid {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+}
+
+.crm-main .crm-card,
+.crm-main .crm-dash-hero,
+.crm-main .crm-dash-kpis {
+    width: 100%;
+}
+
+/* Profile upload */
+.client-profile-upload {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    border: 2px dashed var(--crm-border);
+    border-radius: var(--crm-radius);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--crm-muted);
+}
+
+.client-profile-upload:hover {
+    border-color: var(--crm-purple);
+    color: var(--crm-blue);
+}
+
+.client-profile-upload input[type="file"] {
+    display: none;
+}
+
+.client-profile-photo img {
+    width: 100%;
+    max-width: 220px;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: var(--crm-radius);
+    border: 3px solid #ede9fe;
+}
+
+.client-coming-soon-panel {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.client-coming-soon-panel i {
+    font-size: 3rem;
+    color: var(--crm-purple);
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.client-invoice-watermark {
+    position: absolute;
+    inset: 0;
+    background: center / 180px no-repeat var(--brand-logo-watermark, none);
+    opacity: 0.04;
+    pointer-events: none;
+}
+
+.client-invoice-card {
+    position: relative;
+    overflow: hidden;
+}

@@ -1,0 +1,17 @@
+[08-Oct-2025 21:53:07 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.2.0". You are running 8.1.33. in /home/digiceze/public_html/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /home/digiceze/public_html/vendor/composer/autoload_real.php(25): require()
+#1 /home/digiceze/public_html/vendor/autoload.php(22): ComposerAutoloaderInite5fbbe6137dc77bcd5b6646b5dd75b52::getLoader()
+#2 /home/digiceze/public_html/public/index.php(13): require('/home/digiceze/...')
+#3 {main}
+  thrown in /home/digiceze/public_html/vendor/composer/platform_check.php on line 22
+[25-Nov-2025 01:07:15 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[25-Nov-2025 01:19:35 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[26-Nov-2025 18:49:06 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[26-Nov-2025 18:55:23 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[26-Nov-2025 19:16:26 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[26-Nov-2025 19:47:52 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[26-Nov-2025 21:25:46 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[26-Nov-2025 21:36:59 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[26-Nov-2025 21:41:08 UTC] Stripe Notice: Undefined property of Stripe\Refund instance: amount_refunded
+[10-Mar-2026 18:56:21 UTC] PHP Deprecated:  Optional parameter $secret declared before required parameter $recorder is implicitly treated as a required parameter in /home/digiceze/public_html/app/Services/Upwork/UpworkStripePayment.php on line 18

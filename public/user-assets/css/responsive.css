@@ -1,0 +1,606 @@
+@media (min-width: 1400px) {
+
+    .container,
+    .container-lg,
+    .container-md,
+    .container-sm,
+    .container-xl,
+    .container-xxl {
+        max-width: 1758px;
+        margin: auto;
+    }
+}
+
+
+@media (max-width: 1440px) {
+
+    .container,
+    .container-lg,
+    .container-md,
+    .container-sm,
+    .container-xl {
+        max-width: 1200px;
+    }
+
+    .upload-profile-pic {
+        width: 88%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .doted-border::before {
+        right: 3px;
+    }
+
+    .dashboard-cards {
+        padding: 18px 18px;
+    }
+
+    .dashboard-cards .heading-2 {
+        font-size: 1.5rem;
+    }
+
+    .dashboard-cards .heading-2 span {
+        font-size: 18px;
+    }
+
+    .custom-chat-body {
+        width: 100%;
+    }
+
+    .chat-header {
+        width: 100%;
+    }
+
+    .messages {
+        padding: 0 12px;
+    }
+
+    .messages textarea {
+        font-size: 14px;
+        height: auto;
+    }
+
+    .chat-footer textarea {
+        width: 100%;
+    }
+
+    .chat-header {
+        padding: 0 1rem;
+    }
+
+    .parent-search-bar input {
+        width: 300px;
+    }
+
+    header {
+        height: 90px;
+    }
+
+    .container.bg-colored {
+        padding: 2rem;
+    }
+
+    .invoice-listing .table>:not(caption)>*>* {
+        font-size: 14px;
+    }
+
+    button.btn.pay-now {
+        font-size: 14px;
+        width: 90px;
+        padding: 4px 0;
+    }
+
+    .summary .heading-4:before {
+        width: 84%;
+        top: 9px;
+    }
+
+    .main-id-card .main-id-user p {
+        font-size: 14px;
+    }
+
+    .summary .heading-4 {
+        font-size: 1rem;
+    }
+
+    .paid-unpaid-drop-down select.form-select {
+        border-radius: 6px !important;
+    }
+
+    .sign-up-left {
+        width: 450px;
+    }
+
+    .Need-Help {
+        margin: 20px 0 0 0;
+    }
+
+    .log-in-content {
+        margin: 0;
+    }
+
+    .logo-container img {
+        filter: contrast(0.6);
+        height: auto;
+        margin: 0 0 20px 0;
+    }
+
+}
+
+@media (max-width: 1199px) {}
+
+/* For tablets and smaller desktops (max-width: 991px) */
+@media (max-width: 991px) {
+
+    /* Containers should take full width */
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    /* Profile image container adjustments */
+    .upload-profile-pic {
+        max-width: 100%;
+        margin: 1rem auto;
+    }
+
+    /* Dashboard card adjustments */
+    .dashboard-cards {
+        width: 100%;
+        padding: 20px;
+    }
+
+    /* Mobile logo size adjustments */
+    .logo-mobile {
+        max-height: 50px;
+        width: auto;
+    }
+
+    /* Adjust input fields to be full width */
+    .form-control,
+    .form-select {
+        width: 100%;
+        padding: 10px;
+    }
+
+    /* Adjust button sizes */
+    .custom-btn-login {
+        width: 100%;
+        font-size: 16px;
+        padding: 15px;
+    }
+
+    /* Chat footer and text area adjustments */
+    .chat-footer {
+        padding: 10px 20px;
+    }
+
+    .chat-footer textarea {
+        font-size: 14px;
+    }
+
+    /* Adjust text sizes for better readability */
+    .messages p {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+}
+
+/* For small tablets to large smartphones (max-width: 767px) */
+@media (max-width: 767px) {
+
+    /* Containers should take full width */
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    /* Logo mobile size */
+    .logo-mobile {
+        max-height: 45px;
+        width: auto;
+    }
+
+    /* Profile section adjustments */
+    .profile-left-parent,
+    .profile-right-parent {
+        text-align: left;
+    }
+
+    /* Input fields adjusted for mobile view */
+    .form-control,
+    .form-select {
+        width: 100%;
+        padding: 10px;
+    }
+
+    /* Full-width buttons */
+    .custom-btn-login {
+        width: 100%;
+        padding: 15px;
+    }
+
+    /* Adjust text and padding for mobile devices */
+    .messages p {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    .chat-footer textarea {
+        font-size: 14px;
+    }
+
+    /* Adjust sign-up section to be full width */
+    .sign-up-left {
+        width: 100%;
+        margin: 0 auto;
+        padding: 15px;
+    }
+
+    /* General Mobile Layout Fix */
+    .table-responsive table,
+    .table-responsive thead,
+    .table-responsive tbody,
+    .table-responsive th,
+    .table-responsive td,
+    .table-responsive tr {
+        display: block;
+        width: 100%;
+    }
+
+    .table-responsive thead {
+        display: block;
+        /* Make sure the header is visible for context */
+        background: linear-gradient(135deg, #db165b, #673187, #f7b63e);
+        color: white;
+        font-weight: bold;
+        padding: 10px;
+        text-align: left;
+    }
+
+    .table-responsive tr {
+        margin-bottom: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        background: #fff;
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-responsive td {
+        text-align: left;
+        padding: 8px;
+        border: none;
+        position: relative;
+    }
+
+    .table-responsive td::before {
+        content: attr(data-label);
+        /* show label as header within the card */
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+    }
+
+    .table-responsive th {
+        display: block;
+        /* Ensuring header is part of each card */
+        background-color: rgb(255, 255, 255);
+        color: rgb(0, 0, 0);
+        padding: 8px 15px;
+        text-align: left;
+    }
+
+    /* Adjusting Card Title and Content */
+    .table-responsive td[data-label="ID"],
+    .table-responsive td[data-label="Package / Brand"],
+    .table-responsive td[data-label="Service"],
+    .table-responsive td[data-label="Status"],
+    .table-responsive td[data-label="Total"],
+    .table-responsive td[data-label="Paid"],
+    .table-responsive td[data-label="Due"],
+    .table-responsive td[data-label="Actions"] {
+        display: block;
+        padding-top: 8px;
+        font-size: 16px;
+    }
+
+    /* Styling for the action buttons and labels inside the card */
+    .table-responsive td[data-label="Actions"] {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding-top: 10px;
+    }
+
+    .table-responsive .btn-info,
+    .table-responsive .btn-sm {
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 6px;
+    }
+
+    /* Specific adjustment for the "Raise Ticket" button */
+    .table-responsive .btn-info {
+        background-color: #db165b;
+        color: white;
+        border: none;
+    }
+
+    .table-responsive .btn-info:hover {
+        background-color: #673187;
+    }
+
+    /* Adding some styling for the badge to make it more visible in mobile cards */
+    .table-responsive .badge-info {
+        padding: 4px 8px;
+        font-size: 12px;
+        color: white;
+        background-color: #f7b63e;
+        border-radius: 4px;
+    }
+
+    /* Styling for the card footer */
+    .card-footer {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0;
+    }
+
+    .card-footer .pagination {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+
+}
+
+/* For small mobile devices (max-width: 576px) */
+@media (max-width: 576px) {
+
+    .dashboard-cards {
+        max-width: 290px;
+    }
+
+    header nav.navbar.navbar-expand-lg {
+        position: relative;
+        top: 0;
+    }
+
+    div#navbarSupportedContent {
+        position: absolute;
+        top: 80px;
+        background: white;
+        width: 100%;
+        border-radius: 10px;
+        padding: 15px;
+        z-index: 1;
+    }
+
+    form.d-flex {
+        justify-content: center;
+    }
+
+    .parent-search-bar {}
+
+    .parent-search-bar input {
+        /* width: 197px; */
+    }
+
+    .bell-icon {
+        justify-content: center;
+        text-align: center;
+        margin: 0px auto;
+        display: flex;
+        margin-top: 10px;
+        align-items: center;
+    }
+
+    .bell-icon img {
+        width: 17px;
+        height: 20px;
+    }
+
+    .profile-drop-down {
+        margin-left: 0px;
+        margin-right: 0px;
+    }
+
+    section.invoice-listing input {
+        margin: 10px 0px;
+    }
+
+    section.invoice-listing select {
+        margin-bottom: 10px;
+    }
+
+    .paid {
+        margin-top: 11px;
+        width: auto;
+    }
+
+    section.invoice-listing.invoice th {}
+
+    .invoice-listing .table>:not(caption)>*>* {
+        font-size: 12px;
+    }
+
+    /* Containers should take full width */
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    /* Adjust profile picture section */
+    .upload-profile-pic {
+        max-width: 100%;
+        margin: 10px auto;
+    }
+
+    /* Adjust logo to be smaller */
+    .logo-mobile {
+        max-height: 40px;
+        width: auto;
+    }
+
+    /* Full width buttons on small screens */
+    .custom-btn-login {
+        font-size: 14px;
+        padding: 12px;
+    }
+
+    /* Form and text areas adjust for small devices */
+    .form-control,
+    .form-select {
+        width: 100%;
+        padding: 10px;
+    }
+
+    .messages p {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    /* Adjust sign-in and sign-up sections */
+    .sign-in-sec {
+        padding: 10px;
+    }
+
+    .sign-up-left {
+        padding: 10px;
+        width: 100%;
+    }
+
+    .profile-left-parent,
+    .profile-right-parent {
+        text-align: left;
+    }
+
+    /* Adjust chat footer */
+    .chat-footer {
+        padding: 10px 15px;
+    }
+
+    .chat-footer textarea {
+        font-size: 14px;
+    }
+}
+
+
+
+
+/* Make the tabs responsive on small screens */
+.nav-tabs {
+    flex-direction: row;
+}
+
+/* Stack the navigation tabs on mobile */
+@media (max-width: 767px) {
+    .nav-tabs {
+        flex-direction: column;
+        /* Stack tabs vertically on small screens */
+    }
+
+    .nav-link {
+        padding: 12px;
+        /* Make each tab easier to click on mobile */
+    }
+
+    /* Adjust tab content area */
+    .tab-content {
+        padding: 10px;
+        /* Add padding inside the tab content for better spacing */
+        max-height: 500px;
+        /* Limit height to make scrolling more intuitive */
+        overflow-y: auto;
+        /* Make the content scrollable if it's too long */
+    }
+}
+
+/* Add extra space for mobile */
+@media (max-width: 767px) {
+    .heading-2 {
+        font-size: 18px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+}
+
+/* Style for tabs on larger screens (desktops/tablets) */
+@media (min-width: 768px) {
+    .nav-tabs {
+        flex-direction: row;
+        /* Display tabs horizontally on large screens */
+    }
+
+    .nav-link {
+        font-size: 16px;
+        /* Larger font for navigation on desktop */
+        padding: 10px 20px;
+    }
+
+    .tab-content {
+        padding: 20px;
+        /* More padding for tab content */
+    }
+}
+
+
+
+/* General styling for card layout on mobile devices */
+.card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+}
+
+/* For large screens (table view) */
+@media (min-width: 768px) {
+    .d-md-none {
+        display: none;
+    }
+
+    .table-responsive {
+        display: block;
+    }
+
+    /*.card {*/
+    /*    display: none;*/
+    /*}*/
+}
+
+/* For mobile screens (hide the table and show card view) */
+@media (max-width: 767px) {
+    .d-md-none {
+        display: block;
+    }
+
+    /* Display each row in two parts: left side for titles, right side for data */
+    .card .row {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    /* Left side titles - take up 50% width */
+    .card .col-6 {
+        width: 50%;
+        padding: 5px;
+    }
+
+    /* Right side data - take up 50% width */
+    .card .col-6 {
+        width: 50%;
+        padding: 5px;
+    }
+
+}
+

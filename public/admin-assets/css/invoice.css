@@ -1,0 +1,301 @@
+/* Admin order invoice */
+
+.crm-invoice-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--crm-muted);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+}
+
+.crm-invoice-back:hover {
+    color: var(--crm-blue);
+}
+
+.crm-invoice-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: var(--crm-radius);
+    box-shadow: var(--crm-shadow);
+}
+
+.crm-invoice-card::before {
+    content: "Ledrix";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-28deg);
+    font-size: clamp(4rem, 16vw, 8rem);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(68, 56, 201, 0.065);
+    pointer-events: none;
+    z-index: 0;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.crm-invoice-watermark-logo {
+    position: absolute;
+    inset: 0;
+    background: var(--crm-invoice-logo-url) center / 220px no-repeat;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.crm-invoice-inner {
+    position: relative;
+    z-index: 1;
+    padding: 1.5rem 1.75rem 1.75rem;
+}
+
+.crm-invoice-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--crm-border);
+}
+
+.crm-invoice-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+}
+
+.crm-invoice-brand-dots span {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.crm-invoice-brand-dots .dot-purple {
+    background: var(--crm-purple);
+}
+
+.crm-invoice-brand-dots .dot-green {
+    background: var(--crm-green);
+}
+
+.crm-invoice-brand-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--crm-blue-dark);
+    letter-spacing: 0.02em;
+}
+
+.crm-invoice-top h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--crm-blue-dark);
+    margin: 0 0 0.25rem;
+}
+
+.crm-invoice-meta {
+    font-size: 0.85rem;
+    color: var(--crm-muted);
+    margin: 0;
+}
+
+.crm-invoice-meta-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.crm-invoice-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--crm-muted);
+    border: 1px solid var(--crm-border);
+}
+
+.crm-invoice-summary-box {
+    background: #f8fafc;
+    border: 1px solid var(--crm-border);
+    border-radius: 10px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.crm-invoice-total {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--crm-blue-dark);
+    line-height: 1.2;
+}
+
+.crm-invoice-balance {
+    font-size: 0.82rem;
+    color: var(--crm-muted);
+    margin-top: 0.75rem;
+    line-height: 1.6;
+}
+
+.crm-invoice-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--crm-blue-dark);
+    margin-bottom: 0.75rem;
+}
+
+.crm-invoice-table {
+    font-size: 0.88rem;
+}
+
+.crm-invoice-table thead th {
+    background: var(--crm-blue-dark) !important;
+    color: #fff !important;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border: none;
+}
+
+.crm-invoice-summary-table th {
+    font-weight: 600;
+    color: var(--crm-muted);
+    font-size: 0.82rem;
+    vertical-align: top;
+    width: 100px;
+}
+
+.crm-invoice-summary-table td {
+    font-size: 0.88rem;
+    color: var(--crm-text);
+}
+
+.crm-invoice-detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.crm-invoice-detail-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--crm-text);
+    padding: 0.4rem 0;
+}
+
+.crm-invoice-detail-list i {
+    color: var(--crm-purple);
+    margin-top: 0.15rem;
+    width: 16px;
+    flex-shrink: 0;
+}
+
+.crm-invoice-timeline {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--crm-border);
+}
+
+.crm-invoice-timeline-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    padding: 0.35rem 0;
+}
+
+.crm-invoice-timeline-item .label {
+    color: var(--crm-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.crm-invoice-timeline-item .label i {
+    font-size: 0.55rem;
+    color: var(--crm-purple);
+}
+
+.crm-invoice-timeline-item .date {
+    font-weight: 600;
+    color: var(--crm-text);
+    text-align: right;
+}
+
+.crm-invoice-alert {
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+}
+
+.crm-invoice-alert--success {
+    background: rgba(4, 190, 99, 0.1);
+    border: 1px solid rgba(4, 190, 99, 0.3);
+    color: #047857;
+}
+
+.crm-invoice-alert--warning {
+    background: rgba(217, 119, 6, 0.1);
+    border: 1px solid rgba(217, 119, 6, 0.3);
+    color: #b45309;
+}
+
+.crm-invoice-paylink {
+    font-size: 0.78rem;
+    word-break: break-all;
+    color: var(--crm-muted);
+}
+
+.crm-invoice-pay-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.crm-invoice-link-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.crm-invoice-link-url {
+    font-family: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--crm-blue-dark);
+    word-break: break-all;
+    flex: 1;
+    min-width: 0;
+}
+
+@media print {
+    .crm-invoice-no-print {
+        display: none !important;
+    }
+
+    .crm-invoice-card {
+        box-shadow: none;
+        border: none;
+    }
+}

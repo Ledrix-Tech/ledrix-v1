@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1) Redirect if someone explicitly hits /public (remove it from URL)
+    RewriteCond %{THE_REQUEST} \s/+(.*/)?public/([^\s?]*) [NC]
+    RewriteRule ^(.*)public/([^?]*)$ %1%2 [R=301,L]
+
+    # 2) Send all requests to /public internally (front controller)
+    RewriteCond %{REQUEST_URI} !/public/ [NC]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
