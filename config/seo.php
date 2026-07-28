@@ -47,8 +47,13 @@ return [
         'name' => 'Zeeshan Asghar',
         'job_title' => 'Founder & CEO',
         'linkedin' => 'https://www.linkedin.com/in/zeeshan-asghar-500a40255/',
+        'photo' => 'front-assets/imgs/founder-lounge.png',
+        'story' => [
+            'origin' => 'While working with agencies and sales teams, Zeeshan Asghar noticed a familiar pattern: closers were drowning in spreadsheets, payment links lived in one tool, leads in another, and client updates in a third. Sellers did not need more features — they needed one workspace that matched how deals actually move.',
+            'founding' => 'In 2024, he founded Ledrix to help revenue teams grow with structure instead of chaos — capturing leads, assigning sellers, closing orders, and collecting payments in a tenant-isolated CRM built for agencies from day one.',
+            'today' => 'Ledrix has expanded into a crafted, not cobbled platform: multi-brand workspaces, seller and client portals, Stripe and PayPal flows, and automation-ready architecture. Led by Zeeshan, the team is building the practical sales operating system scaling agencies expect today — and the intelligent CRM they will need tomorrow.',
+        ],
         'description' => 'Zeeshan Asghar founded Ledrix to build practical, scalable CRM technology for sales teams and agencies — combining pipeline discipline with modern SaaS architecture.',
-        'photo' => null, // e.g. front-assets/imgs/founder.jpg
     ],
 
     'sitemap' => [

@@ -948,6 +948,89 @@
     color: #4338ca;
 }
 
+/* Our Story — founder section */
+.mkt-about-story-section {
+    background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+}
+
+.mkt-about-story-prose {
+    margin-top: 1.25rem;
+}
+
+.mkt-about-story-prose p {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: #475569;
+    margin-bottom: 1.15rem;
+}
+
+.mkt-about-founder-profile {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.mkt-about-founder-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.mkt-founder-scene {
+    position: relative;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.mkt-founder-scene-backdrop {
+    position: absolute;
+    inset: 8% -6% -4% 10%;
+    border-radius: 28px;
+    background: linear-gradient(145deg, #eef2ff 0%, #f1f5f9 55%, #e2e8f0 100%);
+    z-index: 0;
+}
+
+.mkt-founder-scene-photo {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(15, 23, 42, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.mkt-founder-scene-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    object-position: center center;
+}
+
+.mkt-founder-scene-accent {
+    position: absolute;
+    right: -8px;
+    bottom: 24px;
+    z-index: 2;
+}
+
+.mkt-founder-scene-coffee {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #fff;
+    color: #4338ca;
+    font-size: 1.25rem;
+    box-shadow: 0 12px 32px rgba(67, 56, 202, 0.18);
+    border: 1px solid #e0e7ff;
+}
+
 /* Leadership — executive profile */
 .mkt-about-leadership-section {
     background: #f8fafc;
@@ -1125,6 +1208,15 @@
 
     .mkt-about-principles-note {
         margin-top: 0.5rem;
+    }
+
+    .mkt-founder-scene {
+        max-width: 360px;
+        margin-top: 0.5rem;
+    }
+
+    .mkt-about-story-prose p {
+        font-size: 1rem;
     }
 
     .mkt-founder-portrait {

@@ -57,6 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCSRFToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\CheckSectionMaintenance::class,
             \App\Http\Middleware\SetTenantContext::class,
 
         ]);

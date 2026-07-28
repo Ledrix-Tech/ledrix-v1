@@ -366,71 +366,55 @@
 
 
 
-        {{-- Leadership — executive profile --}}
-        <section class="mkt-about-section mkt-about-leadership-section" id="founder">
+        {{-- Our Story — founder narrative --}}
+        <section class="mkt-about-section mkt-about-story-section" id="founder">
             <div class="container">
-                <div class="mkt-about-leadership-shell">
-                    <div class="row align-items-center g-5">
-                        <div class="col-lg-6">
-                            <span class="mkt-about-eyebrow mkt-about-eyebrow--dark">Leadership</span>
-                            <h2 class="mkt-about-section-title">Meet the founder</h2>
-
-                            <blockquote class="mkt-about-founder-quote">
-                                Building practical CRM technology for the next decade of agency sales.
-                            </blockquote>
-
-                            <h3 class="mkt-about-founder-name">{{ config('seo.founder.name') }}</h3>
-
-                            <div class="mkt-about-founder-meta">
-                                <span><i class="bi bi-patch-check-fill"></i> Founder &amp; CEO</span>
-                                <span><i class="bi bi-bricks"></i> Product &amp; platform</span>
-                                <span><i class="bi bi-globe2"></i> Multi-tenant SaaS</span>
-                            </div>
-
-                            <div class="mkt-about-prose">
-                                <p class="text-secondary mb-0">
-                                    {{ config('seo.founder.description') }}
-                                    Zeeshan leads product direction and platform architecture — prioritizing tools that help sales teams execute, not admin overhead that slows them down.
-                                </p>
-                            </div>
-
-                            <div class="mkt-about-founder-actions">
-                                <a href="{{ config('seo.founder.linkedin') }}"
-                                    class="btn mkt-about-btn-primary"
-                                    target="_blank"
-                                    rel="noopener noreferrer me author">
-                                    <i class="bi bi-linkedin"></i> Connect on LinkedIn
-                                </a>
-                                <a href="{{ route('contact-us.get') }}" class="btn mkt-about-btn-outline">
-                                    <i class="bi bi-envelope"></i> Contact team
-                                </a>
+                <div class="row align-items-center g-5 g-lg-6">
+                    <div class="col-lg-6 order-lg-2">
+                        <div class="mkt-founder-scene">
+                            <div class="mkt-founder-scene-backdrop" aria-hidden="true"></div>
+                            <figure class="mkt-founder-scene-photo">
+                                @if ($founderPhoto)
+                                    <img src="{{ asset($founderPhoto) }}"
+                                        alt="{{ config('seo.founder.name') }} — Founder and CEO of Ledrix CRM"
+                                        width="560" height="700" loading="lazy">
+                                @else
+                                    <div class="mkt-founder-photo-fallback" aria-hidden="true">
+                                        <span>ZA</span>
+                                    </div>
+                                @endif
+                            </figure>
+                            <div class="mkt-founder-scene-accent" aria-hidden="true">
+                                <span class="mkt-founder-scene-coffee"><i class="bi bi-cup-hot"></i></span>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="col-lg-6">
-                            <div class="mkt-founder-portrait mkt-founder-portrait--premium">
-                                <span class="mkt-founder-role-tag mkt-founder-role-tag--top">
-                                    <i class="bi bi-patch-check-fill"></i> Founder &amp; CEO
-                                </span>
+                    <div class="col-lg-6 order-lg-1">
+                        <span class="mkt-about-eyebrow mkt-about-eyebrow--dark">Our story</span>
+                        <h2 class="mkt-about-section-title">Built for teams that sell — not shuffle tools</h2>
 
-                                <div class="mkt-founder-photo-frame">
-                                    <figure class="mkt-founder-photo">
-                                        @if ($founderPhoto)
-                                            <img src="{{ asset($founderPhoto) }}"
-                                                alt="{{ config('seo.founder.name') }} — Founder and CEO of Ledrix CRM"
-                                                width="420" height="520" loading="lazy">
-                                        @else
-                                            <div class="mkt-founder-photo-fallback" aria-hidden="true">
-                                                <span>ZA</span>
-                                            </div>
-                                        @endif
-                                    </figure>
-                                </div>
+                        <div class="mkt-about-story-prose">
+                            <p>{{ config('seo.founder.story.origin') }}</p>
+                            <p>{{ config('seo.founder.story.founding') }}</p>
+                            <p class="mb-0">{{ config('seo.founder.story.today') }}</p>
+                        </div>
 
-                                <span class="mkt-founder-role-tag mkt-founder-role-tag--bottom">
-                                    <i class="bi bi-patch-check-fill"></i> Founder &amp; CEO
-                                </span>
-                            </div>
+                        <div class="mkt-about-founder-profile">
+                            <h3 class="mkt-about-founder-name mb-1">{{ config('seo.founder.name') }}</h3>
+                            <p class="mkt-about-founder-title">{{ config('seo.founder.job_title') }}, {{ config('seo.organization.name') }}</p>
+                        </div>
+
+                        <div class="mkt-about-founder-actions">
+                            <a href="{{ config('seo.founder.linkedin') }}"
+                                class="btn mkt-about-btn-primary"
+                                target="_blank"
+                                rel="noopener noreferrer me author">
+                                <i class="bi bi-linkedin"></i> Connect on LinkedIn
+                            </a>
+                            <a href="{{ route('contact-us.get') }}" class="btn mkt-about-btn-outline">
+                                <i class="bi bi-envelope"></i> Contact team
+                            </a>
                         </div>
                     </div>
                 </div>
