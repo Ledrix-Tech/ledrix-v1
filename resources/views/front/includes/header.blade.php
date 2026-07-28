@@ -4,7 +4,7 @@
 
     <div class="container">
         <a class="navbar-brand" href="{{ route('index.get') }}">
-            <img src="{{ asset(config('seo.front_logo', 'front-assets/imgs/logo-ic.png')) }}" 
+            <img src="{{ asset(config('seo.front_logo', 'front-assets/imgs/logo-ic.png')) }}"
                 alt="Ledrix CRM — multi-tenant sales CRM software for agencies">
         </a>
 
