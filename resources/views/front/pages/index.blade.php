@@ -66,7 +66,7 @@
             </div>
         </section>
 
-        @php($launchVideo = config('seo.launch_video', []))
+        <!-- @php($launchVideo = config('seo.launch_video', []))
         @if (! empty($launchVideo['file']))
         {{-- Video — SaaS V1 launch audit (Admin + Seller) --}}
         <section class="mkt-video-section">
@@ -112,7 +112,7 @@
                 </video>
             </div>
         </section>
-        @endif
+        @endif -->
 
         {{-- Use cases --}}
         <section class="mkt-section mkt-section-muted">
