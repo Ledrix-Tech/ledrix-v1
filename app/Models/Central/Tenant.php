@@ -210,13 +210,16 @@ class Tenant extends Authenticatable
 
     public function limit(string $limitKey): int
     {
-        // 1. Check per-tenant override
         $override = $this->limitOverride;
-        if ($override && !is_null($override->$limitKey)) {
-            return (int) $override->$limitKey;
+
+        if ($override && ! $override->isExpired()) {
+            $forced = $override->getOverride($limitKey);
+
+            if ($forced !== null) {
+                return $forced;
+            }
         }
 
-        // 2. Fall back to plan
         return (int) ($this->plan?->$limitKey ?? 0);
     }
 
@@ -225,18 +228,11 @@ class Tenant extends Authenticatable
         return $this->limit($limitKey) === -1;
     }
 
-    // Check if tenant has hit a specific limit
+    // Check if tenant has hit a specific limit (live DB counts).
     // Usage: $tenant->hasHitLimit('max_brands')
     public function hasHitLimit(string $limitKey): bool
     {
-        if ($this->isUnlimited($limitKey)) return false;
-
-        $snapshot  = $this->usageSnapshot;
-        $usageKey  = str_replace('max_', 'total_', $limitKey);
-
-        if (!$snapshot || !isset($snapshot->$usageKey)) return false;
-
-        return (int) $snapshot->$usageKey >= $this->limit($limitKey);
+        return app(\App\Services\Tenant\TenantUsageService::class)->hasHitLimit($this, $limitKey);
     }
 
     // ── Trial Helpers ──────────────────────────────────────
@@ -325,6 +321,16 @@ class Tenant extends Authenticatable
         return $query->whereHas('activeMembership', function ($q) use ($days) {
             $q->whereDate('end_date', '<=', now()->addDays($days))
               ->whereDate('end_date', '>=', now());
+        });
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (Tenant $tenant) {
+            if ($tenant->isDirty('custom_domain') && filled($tenant->custom_domain)) {
+                app(\App\Services\Tenant\TenantFeatureService::class)
+                    ->assertEnabled('custom_domain', (int) $tenant->id);
+            }
         });
     }
 }

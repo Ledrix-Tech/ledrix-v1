@@ -11,9 +11,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Services\Tenant\TenantLimitService;
+use App\Support\TenantContext;
 
 class AdminBrandsController extends Controller
 {
+    public function __construct(
+        private TenantLimitService $limits,
+    ) {}
+
     public function adminBrandPost(Request $request)
     {
         try {
@@ -23,6 +29,11 @@ class AdminBrandsController extends Controller
                 'brand_url'  => 'required|url|unique:brands,brand_url', // Ensure brand URL is unique
                 'module'     => 'required|in:ppc,upwork', // Ensure module is either 'ppc' or 'upwork'
             ]);
+
+            $tenantId = \App\Support\TenantContext::resolve();
+            if ($tenantId) {
+                $this->limits->assertCanCreateBrand($validated['module'], (int) $tenantId);
+            }
 
             // Create and save brand
             $brand = new Brand();
@@ -59,29 +70,33 @@ class AdminBrandsController extends Controller
         $seller = auth('seller')->user();
         $admin  = auth('admin')->user();
 
-        // 🚫 Sellers are not allowed here
         if ($seller) {
             abort(403, 'Sellers cannot access this page.');
         }
 
-        // ✅ Only allowed admin roles
-        if (!$admin || !in_array($admin->role, ['admin', 'finance', 'white_wolf'])) {
+        if (! $admin || ! in_array($admin->role, ['admin', 'finance', 'white_wolf'], true)) {
             return back()->with('error', 'You do not have permission to access this page.');
         }
 
-        $grossCents = (int) Payment::sum('amount');
-        $refundCents = (int) Payment::sum('refunded_amount');
-        $chargebackCents = (int) Payment::where('refund_status', 'chargeback')->sum('amount');
+        $tenantId = $this->tenantIdOrAbort();
+
+        $paymentQuery = fn () => Payment::query()->where('payments.tenant_id', $tenantId);
+        $paymentLinkQuery = fn () => PaymentLink::query()->where('payment_links.tenant_id', $tenantId);
+
+        $grossCents = (int) $paymentQuery()->sum('payments.amount');
+        $refundCents = (int) $paymentQuery()->sum('payments.refunded_amount');
+        $chargebackCents = (int) $paymentQuery()->where('payments.refund_status', 'chargeback')->sum('payments.amount');
 
         $netCents = max(0, $grossCents - ($refundCents + $chargebackCents));
 
-        $rawProviderStats = Payment::select(
-            'provider',
-            DB::raw('SUM(amount) as gross'),
-            DB::raw('SUM(refunded_amount) as refunds'),
-            DB::raw('SUM(CASE WHEN refund_status = "chargeback" THEN amount ELSE 0 END) as chargebacks')
-        )
-            ->groupBy('provider')
+        $rawProviderStats = $paymentQuery()
+            ->select(
+                'payments.provider',
+                DB::raw('SUM(payments.amount) as gross'),
+                DB::raw('SUM(payments.refunded_amount) as refunds'),
+                DB::raw('SUM(CASE WHEN payments.refund_status = "chargeback" THEN payments.amount ELSE 0 END) as chargebacks')
+            )
+            ->groupBy('payments.provider')
             ->get()
             ->keyBy('provider');
 
@@ -113,11 +128,12 @@ class AdminBrandsController extends Controller
             ],
         ];
 
-        $pipelineRaw = PaymentLink::select(
-            'provider',
-            DB::raw('SUM(CASE WHEN status != "paid" THEN unit_amount ELSE 0 END) as pipeline')
-        )
-            ->groupBy('provider')
+        $pipelineRaw = $paymentLinkQuery()
+            ->select(
+                'payment_links.provider',
+                DB::raw('SUM(CASE WHEN payment_links.status != "paid" THEN payment_links.unit_amount ELSE 0 END) as pipeline')
+            )
+            ->groupBy('payment_links.provider')
             ->pluck('pipeline', 'provider')
             ->toArray();
 
@@ -127,29 +143,32 @@ class AdminBrandsController extends Controller
         ];
 
         $perOrderAgg = DB::table('payment_links')
+            ->where('payment_links.tenant_id', $tenantId)
+            ->whereNull('payment_links.deleted_at')
             ->select('order_id')
             ->selectRaw('MAX(order_total_snapshot) AS snapshot')
             ->selectRaw('SUM(CASE WHEN status = "paid" THEN unit_amount ELSE 0 END) AS paid')
             ->groupBy('order_id');
 
         $brandPayments = DB::table('brands')
-            ->leftJoin('orders', 'orders.brand_id', '=', 'brands.id')
+            ->where('brands.tenant_id', $tenantId)
+            ->leftJoin('orders', function ($join) use ($tenantId) {
+                $join->on('orders.brand_id', '=', 'brands.id')
+                    ->where('orders.tenant_id', '=', $tenantId)
+                    ->whereNull('orders.deleted_at');
+            })
             ->leftJoinSub(
                 $perOrderAgg,
                 'op',
-                fn($join) =>
-                $join->on('orders.id', '=', 'op.order_id')
+                fn ($join) => $join->on('orders.id', '=', 'op.order_id')
             )
             ->select(
                 'brands.id',
                 'brands.brand_name',
                 'brands.brand_url',
                 DB::raw('COUNT(DISTINCT orders.id) AS orders_count'),
-
-                // NEW:
                 DB::raw('COUNT(DISTINCT CASE WHEN orders.order_type = "original" THEN orders.id END) AS original_orders'),
                 DB::raw('COUNT(DISTINCT CASE WHEN orders.order_type = "renewal" THEN orders.id END) AS renewal_orders'),
-
                 DB::raw('COALESCE(SUM(op.paid), 0) AS total_paid'),
                 DB::raw('COALESCE(SUM(op.snapshot), 0) AS total_snapshot')
             )
@@ -159,60 +178,38 @@ class AdminBrandsController extends Controller
                 $due = (int) $row->total_snapshot - (int) $row->total_paid;
 
                 return [
-                    'id'             => $row->id,
-                    'brand_name'     => $row->brand_name,
-                    'brand_url'      => $row->brand_url,
-
-                    'orders_count'   => (int) $row->orders_count,
+                    'id'              => $row->id,
+                    'brand_name'      => $row->brand_name,
+                    'brand_url'       => $row->brand_url,
+                    'orders_count'    => (int) $row->orders_count,
                     'original_orders' => (int) $row->original_orders,
-                    'renewal_orders' => (int) $row->renewal_orders,
-
-                    'total_paid'     => (int) $row->total_paid,
-                    'total_due'      => max($due, 0),
+                    'renewal_orders'  => (int) $row->renewal_orders,
+                    'total_paid'      => (int) $row->total_paid,
+                    'total_due'       => max($due, 0),
                 ];
             });
 
-        // $brandPayments = DB::table('brands')
-        //     ->leftJoin('orders', 'orders.brand_id', '=', 'brands.id')
-        //     ->leftJoinSub($perOrderAgg, 'op', fn($join) => $join->on('orders.id', '=', 'op.order_id'))
-        //     ->select(
-        //         'brands.id',
-        //         'brands.brand_name',
-        //         'brands.brand_url',
-        //         DB::raw('COUNT(DISTINCT orders.id) AS orders_count'),
-        //         DB::raw('COALESCE(SUM(op.paid), 0) AS total_paid'),
-        //         DB::raw('COALESCE(SUM(op.snapshot), 0) AS total_snapshot')
-        //     )
-        //     ->groupBy('brands.id', 'brands.brand_name', 'brands.brand_url')
-        //     ->get()
-        //     ->map(function ($row) {
-        //         $due = (int) $row->total_snapshot - (int) $row->total_paid;
-        //         return [
-        //             'id'           => $row->id,
-        //             'brand_name'   => $row->brand_name,
-        //             'brand_url'    => $row->brand_url,
-        //             'orders_count' => (int) $row->orders_count,
-        //             'total_paid'   => (int) $row->total_paid,
-        //             'total_due'    => max($due, 0),
-        //         ];
-        //     });
-
-        $orders = Order::with(['brand', 'client', 'seller'])
+        $orders = Order::query()
+            ->where('orders.tenant_id', $tenantId)
+            ->with(['brand', 'client', 'seller'])
             ->latest('id')
             ->paginate(20)
             ->withQueryString();
 
-        // forcast revenue for months
-        // forcast revenue for months (with correct brand_id association)
-        $brandMonthly = Payment::selectRaw("
-        orders.brand_id,
-        DATE_FORMAT(payments.created_at, '%Y-%m') AS month,
-        SUM(payments.amount - payments.refunded_amount) AS net
-    ")
-            ->join('orders', 'payments.order_id', '=', 'orders.id')
+        $brandMonthly = $paymentQuery()
+            ->selectRaw("
+                orders.brand_id,
+                DATE_FORMAT(payments.created_at, '%Y-%m') AS month,
+                SUM(payments.amount - payments.refunded_amount) AS net
+            ")
+            ->join('orders', function ($join) use ($tenantId) {
+                $join->on('payments.order_id', '=', 'orders.id')
+                    ->where('orders.tenant_id', '=', $tenantId);
+            })
             ->groupBy('orders.brand_id', 'month')
             ->get()
-            ->groupBy('orders.brand_id');
+            ->groupBy('brand_id');
+
         $brandForecasts = [];
         foreach ($brandMonthly as $brandId => $rows) {
             $values = collect($rows)
@@ -224,30 +221,31 @@ class AdminBrandsController extends Controller
             $weights = collect([3, 2, 1])->take($values->count());
 
             $forecast = $values->count() > 0
-                ? round($values->zip($weights)->sum(fn($pair) => $pair[0] * $pair[1]) / $weights->sum(), 2)
+                ? round($values->zip($weights)->sum(fn ($pair) => $pair[0] * $pair[1]) / $weights->sum(), 2)
                 : 0;
 
-            $brandForecasts[$brandId] = (int) $forecast; // in cents
+            $brandForecasts[$brandId] = (int) $forecast;
         }
-        // pipeline for future
-        $brandPipeline = PaymentLink::select('order_id')
-            ->selectRaw('SUM(CASE WHEN status != "paid" THEN unit_amount ELSE 0 END) as pipeline')
-            ->groupBy('order_id')
+
+        $brandPipeline = $paymentLinkQuery()
+            ->select('payment_links.order_id')
+            ->selectRaw('SUM(CASE WHEN payment_links.status != "paid" THEN payment_links.unit_amount ELSE 0 END) as pipeline')
+            ->groupBy('payment_links.order_id')
             ->pluck('pipeline', 'order_id')
             ->toArray();
-        // provider future revneu
-        $providerForecast = Payment::select(
-            'provider',
-            DB::raw('SUM(amount - refunded_amount) AS net'),
-            DB::raw("DATE_FORMAT(created_at, '%Y-%m') AS month")
-        )
-            ->groupBy('provider', 'month')
+
+        $providerForecast = $paymentQuery()
+            ->select(
+                'payments.provider',
+                DB::raw('SUM(payments.amount - payments.refunded_amount) AS net'),
+                DB::raw("DATE_FORMAT(payments.created_at, '%Y-%m') AS month")
+            )
+            ->groupBy('payments.provider', 'month')
             ->get()
             ->groupBy('provider');
 
         $providerForecastFormatted = [];
         foreach ($providerForecast as $provider => $rows) {
-
             $values = $rows->sortByDesc('month')
                 ->take(3)
                 ->pluck('net')
@@ -256,38 +254,24 @@ class AdminBrandsController extends Controller
             $weights = collect([3, 2, 1])->take($values->count());
 
             $forecast = $values->count() > 0
-                ? round($values->zip($weights)->sum(fn($pair) => $pair[0] * $pair[1]) / $weights->sum(), 2)
+                ? round($values->zip($weights)->sum(fn ($pair) => $pair[0] * $pair[1]) / $weights->sum(), 2)
                 : 0;
 
             $providerForecastFormatted[$provider] = (int) $forecast;
         }
 
-        // dd([
-        //     // Provider analytics
-        //     'providerStats'      => $providerStats,
-        //     'providerPipeline'   => $providerPipeline,
-        //     'providerForecast'   => $providerForecastFormatted, // NEW
-        // ]);
-
         return view('admin.pages.brand-payments', [
-            // Global revenues
-            'gross_revenue'     => $grossCents,
-            'net_revenue'       => $netCents,
-            'refunds'           => $refundCents,
-            'chargebacks'       => $chargebackCents,
-
-            // Provider analytics
-            'providerStats'     => $providerStats,
-            'providerPipeline'  => $providerPipeline,
-            'providerForecast'  => $providerForecastFormatted, // NEW
-
-            // Brand analytics
-            'brandPayments'     => $brandPayments,
-            'brandForecasts'    => $brandForecasts,    // NEW
-            'brandPipeline'     => $brandPipeline,     // NEW
-
-            // Orders table
-            'orders'            => $orders,
+            'gross_revenue'    => $grossCents,
+            'net_revenue'      => $netCents,
+            'refunds'          => $refundCents,
+            'chargebacks'      => $chargebackCents,
+            'providerStats'    => $providerStats,
+            'providerPipeline' => $providerPipeline,
+            'providerForecast' => $providerForecastFormatted,
+            'brandPayments'    => $brandPayments,
+            'brandForecasts'   => $brandForecasts,
+            'brandPipeline'    => $brandPipeline,
+            'orders'           => $orders,
         ]);
     }
 
@@ -377,11 +361,16 @@ class AdminBrandsController extends Controller
 
     public function adminBrandPayouts()
     {
-        $brands = Brand::all();
+        $tenantId = $this->tenantIdOrAbort();
+
+        $brands = Brand::query()->where('tenant_id', $tenantId)->get();
         $brandData = [];
 
         foreach ($brands as $brand) {
-            $keys = AccountKey::where('brand_id', $brand->id)->first();
+            $keys = AccountKey::query()
+                ->where('tenant_id', $tenantId)
+                ->where('brand_id', $brand->id)
+                ->first();
             if (!$keys || !$keys->stripe_secret_key) {
                 $brandData[] = [
                     'brand' => $brand,
@@ -422,5 +411,14 @@ class AdminBrandsController extends Controller
         }
         // dd($brandData);
         return view('admin.pages.eachBrand-payouts', compact('brandData'));
+    }
+
+    private function tenantIdOrAbort(): int
+    {
+        $tenantId = (int) (auth('admin')->user()?->tenant_id ?? TenantContext::resolve() ?? 0);
+
+        abort_if($tenantId <= 0, 403, 'Tenant workspace could not be resolved for this account.');
+
+        return $tenantId;
     }
 }

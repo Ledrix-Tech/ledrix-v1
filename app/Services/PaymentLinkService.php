@@ -178,16 +178,19 @@ class PaymentLinkService
     private function resolveClientForLead(Lead $lead, int $tenantId = 0): Client
     {
         if ($lead->client_id) {
-            $client = $lead->client;
+            $client = Client::withoutGlobalScopes()->find($lead->client_id);
         } else {
             $email = $lead->email ? strtolower(trim($lead->email)) : null;
 
-            // You can allow null email, but then don’t ever send mail to it.
             $client = $email
-                ? Client::whereRaw('LOWER(email)=?', [$email])->first()
+                ? Client::withoutGlobalScopes()->whereRaw('LOWER(email)=?', [$email])->first()
                 : null;
 
             if (!$client) {
+                if ($tenantId) {
+                    $this->limits->assertCanCreateClient($tenantId);
+                }
+
                 $client = Client::create([
                     'tenant_id' => $tenantId ?: $lead->tenant_id,
                     'name'      => $lead->name ?: 'Unknown',
@@ -248,6 +251,12 @@ class PaymentLinkService
             ->first();
 
         if (!$order) {
+            $tenantId = (int) ($brand->tenant_id ?? 0);
+
+            if ($tenantId) {
+                $this->limits->assertCanCreateOrder($tenantId);
+            }
+
             return Order::create([
                 'tenant_id'       => $brand->tenant_id,
                 'lead_id'         => $lead->id,
@@ -356,6 +365,10 @@ class PaymentLinkService
             ->first();
 
         if (!$renewal) {
+            if ($brand->tenant_id) {
+                $this->limits->assertCanCreateOrder((int) $brand->tenant_id);
+            }
+
             return Order::create([
                 'tenant_id'       => $brand->tenant_id,
                 'lead_id'         => $lead->id,

@@ -222,6 +222,16 @@ class WebhookController extends Controller
             $brand = $this->resolveBrandFromWebhook($provider, $payload);
 
             if ($brand) {
+                if ($brand->tenant_id && ! app(\App\Services\Tenant\TenantFeatureService::class)->enabled('webhooks', (int) $brand->tenant_id)) {
+                    Log::info('Webhook ignored — plan excludes payment webhooks', [
+                        'provider'  => $provider,
+                        'brand_id'  => $brand->id,
+                        'tenant_id' => $brand->tenant_id,
+                    ]);
+
+                    return response()->json(['ok' => true, 'skipped' => 'plan'], 200);
+                }
+
                 try {
                     $gateway = $factory->forProviderWithBrand($provider, $brand);
                 } catch (\Throwable $e) {

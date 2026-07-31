@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\Central\Tenant;
 use App\Models\Seller;
+use App\Services\Tenant\SubscriptionAccessService;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -61,6 +63,14 @@ class AdminAuthController extends Controller
             if ($admin->tenant_id) {
                 session(['tenant_id' => $admin->tenant_id]);
                 TenantContext::set($admin->tenant_id);
+
+                $tenant = Tenant::query()->find($admin->tenant_id);
+                if ($tenant && ! app(SubscriptionAccessService::class)->canUseCrm($tenant)) {
+                    Auth::guard('admin')->logout();
+                    session()->forget(['tenant_id', 'role']);
+
+                    return back()->with('error', 'Your subscription is not active. Please sign in via your organization portal to renew.');
+                }
             }
 
             if ($admin->role === 'demo') {

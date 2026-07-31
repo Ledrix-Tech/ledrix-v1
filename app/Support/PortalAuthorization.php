@@ -13,6 +13,26 @@ use App\Models\Seller;
 
 class PortalAuthorization
 {
+    private static function adminTenantId(): ?int
+    {
+        $admin = auth('admin')->user();
+
+        return ($admin instanceof Admin && $admin->tenant_id)
+            ? (int) $admin->tenant_id
+            : null;
+    }
+
+    private static function resourceBelongsToAdminTenant(?int $resourceTenantId): bool
+    {
+        $adminTenantId = self::adminTenantId();
+
+        if ($adminTenantId === null) {
+            return true;
+        }
+
+        return $resourceTenantId !== null && $adminTenantId === (int) $resourceTenantId;
+    }
+
     public static function actor(): Admin|Seller|null
     {
         $admin = auth('admin')->user();
@@ -53,7 +73,8 @@ class PortalAuthorization
         $admin = auth('admin')->user();
 
         if ($admin instanceof Admin) {
-            return ($admin->role ?? 'admin') !== 'finance';
+            return ($admin->role ?? 'admin') !== 'finance'
+                && self::resourceBelongsToAdminTenant($lead->tenant_id);
         }
 
         $seller = auth('seller')->user();
@@ -88,7 +109,8 @@ class PortalAuthorization
         $admin = auth('admin')->user();
 
         if ($admin instanceof Admin) {
-            return ($admin->role ?? 'admin') !== 'finance';
+            return ($admin->role ?? 'admin') !== 'finance'
+                && self::resourceBelongsToAdminTenant($order->tenant_id);
         }
 
         $seller = auth('seller')->user();
@@ -124,7 +146,8 @@ class PortalAuthorization
         $admin = auth('admin')->user();
 
         if ($admin instanceof Admin) {
-            return ($admin->role ?? 'admin') !== 'finance';
+            return ($admin->role ?? 'admin') !== 'finance'
+                && self::resourceBelongsToAdminTenant($client->tenant_id);
         }
 
         $seller = auth('seller')->user();
@@ -199,6 +222,12 @@ class PortalAuthorization
     public static function authorizeBrand(Brand $brand): void
     {
         if (auth('admin')->check()) {
+            abort_unless(
+                self::resourceBelongsToAdminTenant($brand->tenant_id),
+                403,
+                'You cannot access this brand.'
+            );
+
             return;
         }
 

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Seller;
 
 use Carbon\Carbon;
 use App\Models\Seller;
+use App\Models\Central\Tenant;
+use App\Services\Tenant\SubscriptionAccessService;
 use Illuminate\Http\Request;
 use App\Support\SellerLoginTenantResolver;
 use App\Support\TenantContext;
@@ -100,6 +102,14 @@ class SellerAuthController extends Controller
             if ($seller->tenant_id) {
                 session(['tenant_id' => $seller->tenant_id]);
                 TenantContext::set($seller->tenant_id);
+
+                $tenant = Tenant::query()->find($seller->tenant_id);
+                if ($tenant && ! app(SubscriptionAccessService::class)->canUseCrm($tenant)) {
+                    Auth::guard('seller')->logout();
+                    session()->forget(['tenant_id', 'role']);
+
+                    return back()->with('error', 'Your organization subscription is not active. Please contact your administrator.');
+                }
             }
 
             session(['role' => $seller->is_seller]);

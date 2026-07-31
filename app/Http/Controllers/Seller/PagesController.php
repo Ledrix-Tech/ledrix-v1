@@ -13,7 +13,7 @@ use App\Models\RiskyClient;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Central\TenantMembership;
+use App\Services\LeadScriptService;
 use App\Http\Controllers\Controller;
 use App\Models\Questionnair;
 use App\Support\PortalAuthorization;
@@ -24,7 +24,7 @@ class PagesController extends Controller
     /**
      * Seller Domain Scripts
      */
-    public function sellerDomainScripts()
+    public function sellerDomainScripts(LeadScriptService $leadScripts)
     {
         $seller = auth('seller')->user();
         abort_unless($seller, 403, 'Unauthorized access.');
@@ -32,18 +32,10 @@ class PagesController extends Controller
         $brand = Brand::query()->find($seller->brand_id);
         abort_unless($brand, 404, 'Brand not found.');
 
-        $brandKey = $brand->public_form_token ?? '';
-        $companyApiKey = '';
-
-        if ($brand->tenant_id) {
-            $companyApiKey = TenantMembership::query()
-                ->where('tenant_id', $brand->tenant_id)
-                ->whereIn('status', ['active', 'trialing'])
-                ->latest('id')
-                ->value('api_key') ?? '';
-        }
-
-        return view('sellers.pages.domain-script', compact('brand', 'brandKey', 'companyApiKey'));
+        return view('sellers.pages.domain-script', [
+            'brand'         => $brand,
+            'scriptService' => $leadScripts,
+        ]);
     }
 
     /**

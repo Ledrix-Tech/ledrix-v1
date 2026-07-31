@@ -23,9 +23,12 @@ trait CreatesPaymentFlow
             'is_seller' => 'front_seller',
         ]);
 
-        $client = Client::factory()->create();
+        $client = Client::factory()->create([
+            'tenant_id' => $brand->tenant_id ?? 1,
+        ]);
 
         $lead = Lead::factory()->create(array_merge([
+            'tenant_id' => $brand->tenant_id ?? 1,
             'brand_id'  => $brand->id,
             'seller_id' => $seller->id,
             'client_id' => $client->id,

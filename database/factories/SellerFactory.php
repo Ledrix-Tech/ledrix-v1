@@ -11,6 +11,7 @@ class SellerFactory extends Factory
     {
         return [
             'brand_id' => Brand::factory(),
+            'tenant_id'=> 1,
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'password' => bcrypt('secret'),

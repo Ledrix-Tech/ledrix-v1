@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'portal.auth' => \App\Http\Middleware\PortalAuthMiddleware::class,
             'tenant.feature' => \App\Http\Middleware\EnsureTenantFeatureMiddleware::class,
             'portal.tenant.feature' => \App\Http\Middleware\EnsurePortalTenantFeatureMiddleware::class,
+            'crm.workspace' => \App\Http\Middleware\EnsureCrmWorkspaceMiddleware::class,
 
             'super-admin' => \App\Http\Middleware\Central\SuperAdminMiddleware::class,
             'tenant' => \App\Http\Middleware\TenantMiddleware::class,

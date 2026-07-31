@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Models\Brand;
+use App\Models\Central\Tenant;
 use App\Models\Client;
 use App\Models\Lead;
 use App\Models\Seller;
 use App\Notifications\LeadAutoReplyNotification;
 use App\Notifications\LeadCreatedFsNotification;
+use App\Services\Tenant\SubscriptionAccessService;
 use App\Services\Tenant\TenantFeatureService;
 use App\Services\Tenant\TenantLimitService;
 use App\Support\TenantContext;
@@ -25,6 +27,7 @@ class LeadIntakeService
         private LeadClassifier $classifier,
         private TenantFeatureService $tenantFeatures,
         private TenantLimitService $limits,
+        private SubscriptionAccessService $subscriptionAccess,
     ) {}
 
     /**
@@ -39,13 +42,17 @@ class LeadIntakeService
      *     prediction: ?array
      * }
      */
-    public function storeFromCrmPost(Request $req): array
+    public function storeFromCrmPost(Request $req, bool $skipOriginCheck = false): array
     {
         $incoming = $req->all();
 
         $brand = $this->resolveBrand($incoming['url'] ?? null, $req);
-        abort_unless($brand, 422, 'Unknown brand');
+        abort_unless($brand, 422, 'Unknown brand.');
         abort_unless($brand->tenant_id, 422, 'Brand tenant is not configured.');
+
+        $this->assertIntakeAllowed($brand, $req, $skipOriginCheck);
+
+        $incoming = $this->applyFieldMapping($incoming, $brand);
 
         $validated = $this->validateCoreFields($incoming);
         $meta = $this->buildMeta($incoming, $validated, $req);
@@ -99,21 +106,175 @@ class LeadIntakeService
         }
     }
 
+    /**
+     * Send a test lead from admin Domain Scripts (skips origin check, no customer emails).
+     *
+     * @return array{duplicate: bool, lead: Lead, client: Client, seller: Seller, meta: array, prediction: ?array}
+     */
+    public function storeAdminTestLead(Brand $brand): array
+    {
+        abort_unless($brand->tenant_id, 422, 'Brand tenant is not configured.');
+
+        $host = $brand->brand_host ?: 'example.com';
+        $stamp = now()->format('Y-m-d H:i:s');
+
+        $payload = [
+            'name'       => "Test Lead ({$stamp})",
+            'email'      => 'test+' . $brand->id . '.' . time() . '@ledrix.test',
+            'phone'      => '0000000000',
+            'service'    => 'Domain script test',
+            'message'    => 'Automated test from Admin → Domain Scripts.',
+            'brand_key'  => $brand->public_form_token,
+            'url'        => 'https://' . $host . '/',
+            'brand_host' => $host,
+            'channel'    => 'admin_test',
+            'is_test'    => true,
+        ];
+
+        $request = Request::create(route('crm.leads.post'), 'POST', $payload, [], [], [
+            'HTTP_ACCEPT'          => 'application/json',
+            'HTTP_IDEMPOTENCY-KEY' => 'admin-test-' . $brand->id . '-' . time(),
+        ]);
+
+        return $this->storeFromCrmPost($request, skipOriginCheck: true);
+    }
+
     public function resolveBrand(?string $url, Request $req): ?Brand
     {
-        return $this->resolveBrandFromHostUrl($url) ?? $this->resolveBrandFromRequestOrigin($req);
+        $brandKey = trim((string) $req->input('brand_key', ''));
+
+        $brandFromKey = null;
+        if ($brandKey !== '') {
+            $brandFromKey = Brand::withoutGlobalScopes()
+                ->where('public_form_token', $brandKey)
+                ->first();
+        }
+
+        $brandFromHost = $this->resolveBrandFromHostUrl($url)
+            ?? $this->resolveBrandFromRequestOrigin($req);
+
+        if ($brandFromKey && $brandFromHost) {
+            return $brandFromKey->id === $brandFromHost->id ? $brandFromKey : null;
+        }
+
+        return $brandFromKey ?? $brandFromHost;
     }
 
     public function resolveBrandFromHostUrl(?string $url): ?Brand
     {
-        return $this->brandFromUrl($url);
+        return $this->brandFromHost(self::normalizeHost($url));
     }
 
     public function resolveBrandFromRequestOrigin(Request $req): ?Brand
     {
         $origin = $req->headers->get('Origin') ?: $req->headers->get('Referer');
 
-        return $this->brandFromUrl($origin);
+        return $this->brandFromHost(self::normalizeHost($origin));
+    }
+
+    private function brandFromHost(?string $host): ?Brand
+    {
+        if (! $host) {
+            return null;
+        }
+
+        return Brand::withoutGlobalScopes()
+            ->where(function ($query) use ($host) {
+                $query->where('brand_host', $host)
+                    ->orWhereJsonContains('allowed_origins', $host)
+                    ->orWhereJsonContains('allowed_origins', 'www.' . $host);
+            })
+            ->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $incoming
+     * @return array<string, mixed>
+     */
+    public function applyFieldMapping(array $incoming, Brand $brand): array
+    {
+        $mapping = app(LeadScriptService::class)->fieldMappingForBrand($brand);
+        $normalized = $incoming;
+
+        foreach ($mapping as $crmField => $siteField) {
+            $siteField = trim((string) $siteField);
+            if ($siteField === '' || array_key_exists($crmField, $normalized)) {
+                continue;
+            }
+
+            if (array_key_exists($siteField, $incoming)) {
+                $normalized[$crmField] = $incoming[$siteField];
+            }
+        }
+
+        return $normalized;
+    }
+
+    public function assertPublicIntakeAllowed(Brand $brand, Request $req, bool $skipOriginCheck = false): void
+    {
+        $this->assertIntakeAllowed($brand, $req, $skipOriginCheck);
+    }
+
+    private function assertIntakeAllowed(Brand $brand, Request $req, bool $skipOriginCheck = false): void
+    {
+        $brandKey = trim((string) $req->input('brand_key', ''));
+        abort_unless($brandKey !== '', 422, 'Brand key is required.');
+        abort_unless(
+            hash_equals((string) $brand->public_form_token, $brandKey),
+            403,
+            'Invalid brand key.'
+        );
+
+        $tenant = Tenant::query()->find((int) $brand->tenant_id);
+        abort_unless($tenant, 422, 'Tenant not found.');
+
+        abort_unless(
+            $this->subscriptionAccess->canUseCrm($tenant),
+            403,
+            'Lead capture is unavailable. Please renew or activate your subscription.'
+        );
+
+        $this->tenantFeatures->assertEnabled(
+            'api_access',
+            (int) $brand->tenant_id,
+            'API lead capture is not included in your subscription plan.'
+        );
+
+        if ($brand->status && ! in_array(strtolower((string) $brand->status), ['active', ''], true)) {
+            abort(403, 'This brand is not active for lead capture.');
+        }
+
+        if (! $skipOriginCheck) {
+            $this->assertOriginAllowed($brand, $req);
+        }
+    }
+
+    private function assertOriginAllowed(Brand $brand, Request $req): void
+    {
+        $originHeader = $req->headers->get('Origin') ?: $req->headers->get('Referer');
+        if (! $originHeader) {
+            return;
+        }
+
+        $originHost = self::normalizeHost($originHeader);
+        if (! $originHost) {
+            return;
+        }
+
+        $allowed = collect(array_merge(
+            array_filter([$brand->brand_host]),
+            (array) $brand->allowed_origins
+        ))
+            ->map(fn ($host) => self::normalizeHost((string) $host))
+            ->filter()
+            ->unique()
+            ->values();
+
+        abort_unless(
+            $allowed->contains($originHost),
+            403,
+            'Origin is not allowed for this brand.'
+        );
     }
 
     /**
@@ -150,10 +311,12 @@ class LeadIntakeService
             unset($meta[$field]);
         }
 
+        unset($meta['brand_key'], $meta['api_key']);
+
         $meta['ip']       = $req->ip();
         $meta['ua']       = substr((string) $req->userAgent(), 0, 255);
         $meta['url']      = $incoming['url'] ?? $req->headers->get('Referer');
-        $meta['timezone'] = $incoming['timezone'] ?? now()->timezoneName();
+        $meta['timezone'] = $incoming['timezone'] ?? config('app.timezone');
         $meta['service']  = $validated['service'] ?? null;
 
         return $meta;
@@ -222,7 +385,11 @@ class LeadIntakeService
                 'meta'       => $meta,
             ]);
 
-            DB::afterCommit(function () use ($lead, $seller) {
+            DB::afterCommit(function () use ($lead, $seller, $meta) {
+                if (! empty($meta['is_test'])) {
+                    return;
+                }
+
                 try {
                     Notification::route('mail', $lead->email)
                         ->notify(new LeadAutoReplyNotification($lead));
@@ -243,36 +410,9 @@ class LeadIntakeService
         });
     }
 
-    private function brandFromUrl(?string $url): ?Brand
-    {
-        $host = self::normalizeHost($url);
-
-        if (! $host) {
-            return null;
-        }
-
-        return Brand::withoutGlobalScopes()
-            ->where(function ($query) use ($host) {
-                $query->where('brand_host', $host)
-                    ->orWhereJsonContains('allowed_origins', $host)
-                    ->orWhereJsonContains('allowed_origins', 'www.' . $host);
-            })
-            ->first();
-    }
-
     public static function normalizeHost(?string $url): ?string
     {
-        if (! $url) {
-            return null;
-        }
-
-        if (! preg_match('~^https?://~i', $url)) {
-            $url = 'https://' . $url;
-        }
-
-        $host = parse_url($url, PHP_URL_HOST);
-
-        return $host ? strtolower(preg_replace('/^www\./i', '', $host)) : null;
+        return Brand::normalizeHost($url);
     }
 
     /**

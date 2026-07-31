@@ -33,18 +33,22 @@
                 </a>
             </li>
             @if (isAdmin())
+                @if ($tenantHasPayments ?? false)
                 <li>
                     <a class="crm-nav-link {{ $route === 'admin.account-keys.get' ? 'active' : '' }}"
                         href="{{ route('admin.account-keys.get') }}">
                         <i class="bi bi-key"></i><span>Account Keys</span>
                     </a>
                 </li>
+                @endif
+                @if ($tenantHasApiAccess ?? false)
                 <li>
                     <a class="crm-nav-link {{ $route === 'admin.domain-script.get' ? 'active' : '' }}"
                         href="{{ route('admin.domain-script.get') }}">
                         <i class="bi bi-code-slash"></i><span>Script</span>
                     </a>
                 </li>
+                @endif
             @endif
             <li>
                 <a class="crm-nav-link {{ $route === 'admin.clients.get' ? 'active' : '' }}"
@@ -94,12 +98,14 @@
                             <i class="bi bi-receipt"></i><span>Orders</span>
                         </a>
                     </li>
+                    @if ($tenantHasPayments ?? false)
                     <li>
                         <a class="crm-nav-link {{ $route === 'admin.payments.get' ? 'active' : '' }}"
                             href="{{ route('admin.payments.get') }}">
                             <i class="bi bi-wallet2"></i><span>Payments</span>
                         </a>
                     </li>
+                    @endif
                 @else
                     <li>
                         <a class="crm-nav-link {{ in_array($route, ['admin.assigned-leads-orders.get', 'admin.renewed-orders.get']) ? 'active' : '' }}"

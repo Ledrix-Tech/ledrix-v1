@@ -19,7 +19,12 @@
                         </div>
                         <h2>Almost there — verify your email</h2>
                         @if (!empty($plan))
-                            <p class="small text-primary fw-semibold mb-2">Plan: {{ $plan }}</p>
+                            <p class="small text-primary fw-semibold mb-2">
+                                Plan: {{ $plan }}
+                                @if (!empty($trialDays))
+                                    · {{ $trialDays }}-day free trial starts after verification
+                                @endif
+                            </p>
                         @endif
                         <p class="text-muted mb-4">
                             We've sent a verification link to

@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Central\TenantInvoice;
 use App\Services\Tenant\SubscriptionAccessService;
+use App\Services\Tenant\TenantUsageService;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
-    public function index(SubscriptionAccessService $accessService)
+    public function index(SubscriptionAccessService $accessService, TenantUsageService $usageService)
     {
         $tenant = Auth::guard('tenant')->user();
-        $tenant->load(['plan', 'activeMembership', 'usageSnapshot']);
+        $usage = $usageService->syncSnapshot((int) $tenant->id);
+        $tenant->load(['plan', 'activeMembership']);
+        $tenant->setRelation('usageSnapshot', $usage);
 
         $membership = $accessService->currentMembership($tenant);
         $usage = $tenant->usageSnapshot;

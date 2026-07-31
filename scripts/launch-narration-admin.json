@@ -1,0 +1,16 @@
+{
+  "voice": "en-US-GuyNeural",
+  "title": "Ledrix Admin Launch Tour",
+  "lines": [
+    "Welcome to Ledrix CRM — the multi-tenant sales platform built for agencies and closers.",
+    "This is the Admin dashboard — your command center for leads, orders, sellers, and payments.",
+    "Every workspace is tenant-isolated, so your brands, data, and clients stay separate and secure.",
+    "In Leads, capture inbound prospects and assign them to the right seller in seconds.",
+    "Orders connect every deal to payment status — no more juggling spreadsheets and separate tools.",
+    "The Clients section gives you full visibility into every customer in your workspace.",
+    "Manage Sellers and Brands under one tenant — built for multi-brand agencies.",
+    "Track Payments tied directly to CRM orders — complete revenue clarity from lead to paid.",
+    "Ledrix Admin helps you capture leads, close deals, and scale your agency.",
+    "Start your free trial today at ledrix dot co."
+  ]
+}

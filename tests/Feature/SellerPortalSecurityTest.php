@@ -28,6 +28,7 @@ class SellerPortalSecurityTest extends TestCase
         parent::setUp();
 
         $this->mockTenantFeaturesEnabled();
+        $this->mockCrmWorkspaceAccess();
     }
 
     private function createLogoOrderForClient(Client $client, array $graphOverrides = []): Order

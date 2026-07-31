@@ -66,25 +66,53 @@
             </div>
         </section>
 
-        {{-- Video --}}
+        @php($launchVideo = config('seo.launch_video', []))
+        @if (! empty($launchVideo['file']))
+        {{-- Video — SaaS V1 launch audit (Admin + Seller) --}}
         <section class="mkt-video-section">
             <div class="container text-center">
                 <h2 class="mkt-section-title mb-2">See Ledrix in action</h2>
-                <p class="text-muted mb-4">A quick walkthrough of the CRM workspace your team gets after signup.</p>
+                <p class="text-muted mb-2">
+                    Full SaaS V1 audit — Admin and Seller workspaces on {{ parse_url(config('app.url'), PHP_URL_HOST) ?: 'ledrix.co' }}.
+                </p>
+                <p class="small text-muted mb-4">~10 minutes · English captions included</p>
                 <div class="mkt-video-wrapper" id="mktVideoWrapper">
-                    <img class="mkt-video-thumb" src="{{ asset('front-assets/media/thumbnl.PNG') }}" alt="Ledrix CRM product demo — sales pipeline and seller workspace">
-                    <div class="mkt-play-btn" id="mktPlayBtn" role="button" aria-label="Play demo video">
+                    <img class="mkt-video-thumb"
+                        src="{{ asset($launchVideo['poster'] ?? 'front-assets/media/ledrix-crm-audit-v1-thumb.jpg') }}"
+                        alt="Ledrix CRM V1 audit — admin and seller product demo">
+                    <div class="mkt-play-btn" id="mktPlayBtn" role="button" aria-label="Play Ledrix CRM V1 audit video">
                         <span><i class="bi bi-play-fill"></i></span>
                     </div>
+                </div>
+                <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+                    <a href="{{ asset($launchVideo['file']) }}"
+                        class="btn mkt-btn-primary"
+                        download="{{ $launchVideo['download_name'] ?? 'Ledrix-CRM-SaaS-V1-Audit.mp4' }}">
+                        <i class="bi bi-download"></i> Download SaaS V1 audit (MP4)
+                    </a>
+                    @if (! empty($launchVideo['download_full']))
+                        <a href="{{ asset($launchVideo['download_full']) }}"
+                            class="btn mkt-btn-ghost"
+                            download="{{ $launchVideo['download_name'] ?? 'Ledrix-CRM-SaaS-V1-Audit.mp4' }}">
+                            <i class="bi bi-box-arrow-down"></i> Full quality (HD)
+                        </a>
+                    @endif
                 </div>
             </div>
             <div class="mkt-video-modal" id="mktVideoModal">
                 <button type="button" class="mkt-video-close" id="mktVideoClose" aria-label="Close video">&times;</button>
-                <video id="mktModalVideo" controls>
-                    <source src="{{ asset('front-assets/media/CRM-Loom.mp4') }}" type="video/mp4">
+                <video id="mktModalVideo" controls crossorigin="anonymous" playsinline preload="metadata"
+                    title="{{ $launchVideo['title'] ?? 'Ledrix CRM V1 walkthrough' }}">
+                    <source src="{{ asset($launchVideo['file']) }}" type="video/mp4">
+                    @if (! empty($launchVideo['captions']))
+                        <track kind="captions" src="{{ asset($launchVideo['captions']) }}"
+                            srclang="en" label="English" default>
+                    @endif
+                    Your browser does not support HTML5 video.
                 </video>
             </div>
         </section>
+        @endif
 
         {{-- Use cases --}}
         <section class="mkt-section mkt-section-muted">

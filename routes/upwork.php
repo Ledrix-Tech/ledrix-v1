@@ -17,7 +17,7 @@ Route::group(['prefix' => 'upwork'], function () {
     Route::post('/reset-password', [AuthController::class, 'upworkResetPost'])->name('upwork.reset.post');
     Route::get('/logout', [AuthController::class, 'upworklogout'])->name('upwork.logout');
 
-    Route::group(['middleware' => ['membersOnline', 'upwork']], function () {
+    Route::group(['middleware' => ['membersOnline', 'upwork', 'tenant.feature:upwork_module']], function () {
         Route::get('/dashboard', [ViewsController::class, 'upworkDashboard'])->name('upwork.index.get');
 
         Route::get('/clients', [ViewsController::class, 'upworkClients'])->name('upwork.clients.get');

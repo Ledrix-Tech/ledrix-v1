@@ -33,6 +33,8 @@ class BriefClientSellerTest extends TestCase
             $mock->shouldReceive('assertEnabled')->andReturnNull();
             $mock->shouldReceive('assertAnyEnabled')->andReturnNull();
         });
+
+        $this->mockCrmWorkspaceAccess();
     }
 
     private function createPortalClient(array $attributes = []): Client

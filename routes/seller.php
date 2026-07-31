@@ -24,7 +24,7 @@ Route::group(['prefix' => 'seller'], function () {
     Route::post('/reset-password', [SellerAuthController::class, 'sellerResetPost'])->name('seller.reset.post');
     Route::post('/logout', [SellerAuthController::class, 'sellerlogout'])->name('seller.logout');
 
-    Route::group(['middleware' => ['seller', 'tenant.feature:ppc_module']], function () {
+    Route::group(['middleware' => ['seller', 'crm.workspace', 'tenant.feature:ppc_module']], function () {
         Route::post('/lead/{lead}/finish', [OrderController::class, 'sellerLeadFinish'])->name('seller.lead.finish');
         Route::post('/lead/update-status', [RoughController::class, 'updateAssignedLeadStatus'])->name('seller.assignment.update-status');
         Route::post('/lead-assign', [AdminSellerController::class, 'assignLeadSeller'])->name('seller.lead-assign.post');

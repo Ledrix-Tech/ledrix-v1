@@ -321,7 +321,8 @@ class PaymentRecordingService
             return;
         }
 
-        Lead::where('id', $order->lead_id)
+        Lead::withoutGlobalScopes()
+            ->where('id', $order->lead_id)
             ->whereNotIn('status', ['first_paid', 'in_progress', 'completed', 'renewal_due'])
             ->update([
                 'status'       => 'first_paid',

@@ -19,7 +19,7 @@ class AdminDashboardService
      */
     public function build(?int $brandId = null): array
     {
-        $tenantId = TenantContext::resolve();
+        $tenantId = TenantContext::require();
 
         $brands = Brand::query()
             ->select('id', 'brand_name')
@@ -88,6 +88,8 @@ class AdminDashboardService
             $leadWhere .= ' AND tenant_id = ?';
             $orderWhere .= ' AND tenant_id = ?';
             $paymentWhere .= ' AND p.tenant_id = ? AND o.tenant_id = ?';
+        } else {
+            abort(403, 'Tenant workspace could not be resolved for dashboard metrics.');
         }
 
         if ($brandId) {
@@ -137,7 +139,7 @@ class AdminDashboardService
         $query = DB::table($table)
             ->whereNull('deleted_at');
 
-        if ($tenantId) {
+        if ($tenantId && \Illuminate\Support\Facades\Schema::hasColumn($table, 'tenant_id')) {
             $query->where('tenant_id', $tenantId);
         }
 

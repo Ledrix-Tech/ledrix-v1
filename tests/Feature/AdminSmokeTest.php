@@ -27,6 +27,13 @@ class AdminSmokeTest extends TestCase
         $this->migrateUpworkTables();
     }
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->mockTenantFeaturesEnabled();
+        $this->mockCrmWorkspaceAccess();
+    }
+
     public function test_admin_login_page_loads(): void
     {
         $this->get(route('admin.login.get'))

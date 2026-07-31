@@ -77,11 +77,49 @@
         </div>
     </div>
 
-    <div class="sa-card">
+    <div class="sa-card mb-4">
+        <div class="sa-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h4 class="mb-0">Plan limits</h4>
+            <a href="{{ route('super-admin.tenant.features.get', $tenant->id) }}" class="btn btn-sm btn-outline-primary">
+                Edit limits &amp; features
+            </a>
+        </div>
+        <div class="sa-card-body p-0">
+            <div class="table-responsive">
+                <table class="table sa-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Limit</th>
+                            <th class="text-center">Package</th>
+                            <th class="text-center">Used</th>
+                            <th class="text-center">Effective</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($limitSummary ?? [] as $limit)
+                            <tr class="{{ $limit['at_limit'] ? 'table-warning' : '' }}">
+                                <td data-label="Limit">{{ $limit['label'] }}</td>
+                                <td data-label="Package" class="text-center">{{ \App\Support\TenantLimitCatalog::formatValue($limit['plan_default']) }}</td>
+                                <td data-label="Used" class="text-center">{{ number_format($limit['used']) }}</td>
+                                <td data-label="Effective" class="text-center">
+                                    {{ \App\Support\TenantLimitCatalog::formatValue($limit['effective']) }}
+                                    @if ($limit['at_limit'])
+                                        <span class="badge bg-warning text-dark ms-1">Full</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="sa-card mb-4">
         <div class="sa-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h4 class="mb-0">Feature access</h4>
             <a href="{{ route('super-admin.tenant.features.get', $tenant->id) }}" class="btn btn-sm btn-sa-primary">
-                <i class="bi bi-toggles me-1"></i> Manage features
+                <i class="bi bi-toggles me-1"></i> Manage plan &amp; access
             </a>
         </div>
         <div class="sa-card-body">

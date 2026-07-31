@@ -17,6 +17,7 @@ class AdminFactory extends Factory
             'email'    => $this->faker->unique()->safeEmail(),
             'password' => 'password',
             'role'     => 'admin',
+            'tenant_id'=> 1,
         ];
     }
 

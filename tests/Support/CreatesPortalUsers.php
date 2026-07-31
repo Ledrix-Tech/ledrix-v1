@@ -12,16 +12,27 @@ trait CreatesPortalUsers
 {
     protected function createAdmin(array $attributes = []): Admin
     {
-        return Admin::factory()->create($attributes);
+        return Admin::factory()->create(array_merge([
+            'tenant_id' => 1,
+        ], $attributes));
     }
 
     protected function createSellerUser(?Brand $brand = null, array $attributes = []): Seller
     {
-        $brand ??= Brand::factory()->create();
+        $brand ??= Brand::factory()->create(['tenant_id' => 1]);
 
         return Seller::factory()->create(array_merge([
-            'brand_id' => $brand->id,
+            'brand_id'  => $brand->id,
+            'tenant_id' => $brand->tenant_id ?? 1,
         ], $attributes));
+    }
+
+    /** Bypass subscription gate during portal smoke/security tests. */
+    protected function mockCrmWorkspaceAccess(): void
+    {
+        $this->mock(\App\Services\Tenant\SubscriptionAccessService::class, function ($mock) {
+            $mock->shouldReceive('canUseCrm')->andReturn(true);
+        });
     }
 
     /** Bypass tenant feature gates on seller routes during smoke tests. */

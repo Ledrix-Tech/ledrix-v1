@@ -23,9 +23,9 @@ class ExportController extends Controller
         }
 
         $query = DB::table($table);
-        $tenantId = TenantContext::resolve();
+        $tenantId = TenantContext::require();
 
-        if ($tenantId && Schema::hasColumn($table, 'tenant_id')) {
+        if (Schema::hasColumn($table, 'tenant_id')) {
             $query->where('tenant_id', $tenantId);
         }
 
@@ -123,10 +123,11 @@ class ExportController extends Controller
         if ($id) {
             $ticket = ClientTicket::find($id);
             if (!$ticket) {
-                return back()->with('error', "No lead found with ID {$id}.");
+                return back()->with('error', "No ticket found with ID {$id}.");
             }
+            PortalAuthorization::authorizeTicket($ticket);
             $ticket->delete();
-            return back()->with('success', "Lead with ID {$id} and related data deleted successfully.");
+            return back()->with('success', "Ticket with ID {$id} deleted successfully.");
         }
         // If neither ID nor Status provided
         // return response()->json([

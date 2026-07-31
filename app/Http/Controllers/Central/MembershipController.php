@@ -7,6 +7,7 @@ use App\Models\Central\Tenant;
 use App\Models\Central\TenantInvoice;
 use App\Models\Central\TenantPayment;
 use App\Services\Central\SuperAdminTenantFeatureService;
+use App\Services\Central\SuperAdminTenantLimitService;
 use App\Services\Tenant\TenantFeatureService;
 use Illuminate\Http\Request;
 
@@ -22,11 +23,16 @@ class MembershipController extends Controller
         return view('central.pages.company-profiles', compact('companies'));
     }
 
-    public function superTenantShow($id, TenantFeatureService $features, SuperAdminTenantFeatureService $overrides)
-    {
+    public function superTenantShow(
+        $id,
+        TenantFeatureService $features,
+        SuperAdminTenantFeatureService $featureOverrides,
+        SuperAdminTenantLimitService $limitOverrides,
+    ) {
         $tenant = Tenant::with([
             'plan',
             'featureOverride',
+            'limitOverride',
             'activeMembership.plan',
             'memberships' => fn ($q) => $q->latest()->take(5),
             'payments'    => fn ($q) => $q->latest()->take(8),
@@ -51,7 +57,9 @@ class MembershipController extends Controller
             'pendingPayments' => $pendingPayments,
             'invoices'        => $invoices,
             'featureSummary'  => collect($features->matrixForTenant($tenant))->filter(fn ($f) => $f['effective']),
-            'hasOverrides'    => $overrides->hasAnyOverride($tenant),
+            'limitSummary'    => collect($limitOverrides->matrixForTenant($tenant)),
+            'hasOverrides'    => $featureOverrides->hasAnyOverride($tenant)
+                || $limitOverrides->hasAnyOverride($tenant),
         ]);
     }
 

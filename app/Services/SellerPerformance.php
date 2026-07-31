@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\LeadAssignment;
 use App\Models\PerformanceBonus;
 use App\Models\RiskyClient;
+use App\Services\Tenant\TenantFeatureService;
 use Illuminate\Support\Facades\DB;
 
 class SellerPerformance
@@ -105,27 +106,35 @@ class SellerPerformance
         $currentMonthStart = now()->startOfMonth();
         $currentMonthEnd   = now()->endOfMonth();
 
-        $bonusRule = PerformanceBonus::where('seller_id', $seller->id)
-            ->where(function ($q) use ($currentMonthStart, $currentMonthEnd) {
-                $q->whereNull('period_start')
-                    ->orWhere(function ($q2) use ($currentMonthStart, $currentMonthEnd) {
-                        $q2->where('period_start', '<=', $currentMonthEnd)
-                            ->where(function ($q3) use ($currentMonthStart) {
-                                $q3->whereNull('period_end')
-                                    ->orWhere('period_end', '>=', $currentMonthStart);
-                            });
-                    });
-            })
-            ->first();
-
+        $bonusRule = null;
         $bonusEarned = 0;
         $bonusProgress = 0;
 
-        if ($bonusRule) {
-            $target = (float) $bonusRule->target_revenue;
-            $bonusProgress = $target > 0 ? round(min(($revenue / $target) * 100, 100), 2) : 0;
-            if ($revenue >= $target) {
-                $bonusEarned = $bonusRule->bonus_amount;
+        $tenantId = (int) ($seller->tenant_id ?? 0);
+        $bonusEnabled = $tenantId > 0
+            ? app(TenantFeatureService::class)->enabled('performance_bonus', $tenantId)
+            : false;
+
+        if ($bonusEnabled) {
+            $bonusRule = PerformanceBonus::where('seller_id', $seller->id)
+                ->where(function ($q) use ($currentMonthStart, $currentMonthEnd) {
+                    $q->whereNull('period_start')
+                        ->orWhere(function ($q2) use ($currentMonthStart, $currentMonthEnd) {
+                            $q2->where('period_start', '<=', $currentMonthEnd)
+                                ->where(function ($q3) use ($currentMonthStart) {
+                                    $q3->whereNull('period_end')
+                                        ->orWhere('period_end', '>=', $currentMonthStart);
+                                });
+                        });
+                })
+                ->first();
+
+            if ($bonusRule) {
+                $target = (float) $bonusRule->target_revenue;
+                $bonusProgress = $target > 0 ? round(min(($revenue / $target) * 100, 100), 2) : 0;
+                if ($revenue >= $target) {
+                    $bonusEarned = $bonusRule->bonus_amount;
+                }
             }
         }
 

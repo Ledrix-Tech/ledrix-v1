@@ -32,8 +32,9 @@ class RegistrationController extends Controller
         $result = $registerTenantService->register($request->validated());
 
         $payload = [
-            'email' => $result['tenant']->email,
-            'plan'  => $result['tenant']->plan?->name,
+            'email'      => $result['tenant']->email,
+            'plan'       => $result['tenant']->plan?->name,
+            'trial_days' => (int) ($result['tenant']->plan?->trial_days ?? 14),
         ];
 
         if (config('app.debug')) {
@@ -56,6 +57,7 @@ class RegistrationController extends Controller
         return view('front.pages.tenant.register-success', [
             'email'     => session('email'),
             'plan'      => session('plan'),
+            'trialDays' => session('trial_days', 14),
             'verifyUrl' => session('verify_url'),
         ]);
     }

@@ -72,7 +72,7 @@
                                 <td data-label="Actions">
                                     <div class="d-flex flex-wrap gap-1 justify-content-end">
                                         <a href="{{ route('super-admin.tenant.show', $company->id) }}" class="btn btn-sm btn-outline-primary">Details</a>
-                                        <a href="{{ route('super-admin.tenant.features.get', $company->id) }}" class="btn btn-sm btn-outline-secondary">Features</a>
+                                        <a href="{{ route('super-admin.tenant.features.get', $company->id) }}" class="btn btn-sm btn-outline-secondary">Plan &amp; access</a>
                                         @if ($company->status === 'active')
                                             <button type="button" class="btn btn-sm btn-outline-danger sa-tenant-status-btn"
                                                 data-id="{{ $company->id }}" data-status="suspended">Suspend</button>

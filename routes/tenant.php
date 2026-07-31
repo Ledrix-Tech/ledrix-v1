@@ -12,14 +12,16 @@ use App\Http\Controllers\Tenant\StripeBillingController;
 use Illuminate\Support\Facades\Route;
 
 // ── Registration (public) ──────────────────────────────────
-Route::get('/register/{slug}', [RegistrationController::class, 'showForm'])
-    ->name('tenant.register.form');
+// Static paths MUST be registered before /register/{slug} or "success" is treated as a plan slug → 404.
+Route::get('/register/success', [RegistrationController::class, 'success'])
+    ->name('tenant.register.success');
 
 Route::post('/register', [RegistrationController::class, 'store'])
     ->name('tenant.register.store');
 
-Route::get('/register/success', [RegistrationController::class, 'success'])
-    ->name('tenant.register.success');
+Route::get('/register/{slug}', [RegistrationController::class, 'showForm'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('tenant.register.form');
 
 Route::get('/verify-email/{token}', [RegistrationController::class, 'verify'])
     ->name('tenant.verify-email');

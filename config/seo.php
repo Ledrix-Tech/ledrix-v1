@@ -23,6 +23,15 @@ return [
     'front_favicon_32' => 'front-assets/imgs/favicon-32.png',
     'front_apple_touch_icon' => 'front-assets/imgs/apple-touch-icon.png',
 
+    'launch_video' => [
+        'file' => 'front-assets/media/ledrix-crm-audit-v1-web.mp4',
+        'poster' => 'front-assets/media/ledrix-crm-audit-v1-thumb.jpg',
+        'captions' => 'front-assets/media/ledrix-crm-audit-v1.vtt',
+        'download_name' => 'Ledrix-CRM-SaaS-V1-Audit.mp4',
+        'download_full' => 'front-assets/media/ledrix-crm-audit-v1-full.mp4',
+        'title' => 'Ledrix CRM V1 — Admin & Seller walkthrough',
+    ],
+
     'social' => [
         'facebook'  => env('SOCIAL_FACEBOOK_URL', 'https://www.facebook.com/profile.php?id=100063861860966'),
         'instagram' => env('SOCIAL_INSTAGRAM_URL', 'https://www.instagram.com/ledrixtech/'),

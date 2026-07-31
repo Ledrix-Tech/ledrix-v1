@@ -12,6 +12,7 @@ class LeadFactory extends Factory
     public function definition(): array
     {
         return [
+            'tenant_id' => 1,
             'brand_id' => Brand::factory(),
             'seller_id' => Seller::factory(),
             'client_id' => Client::factory(),

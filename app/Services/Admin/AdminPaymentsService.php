@@ -82,11 +82,7 @@ class AdminPaymentsService
      */
     private function applyTenantScope(Builder $query): void
     {
-        $tenantId = TenantContext::resolve();
-
-        if (! $tenantId) {
-            return;
-        }
+        $tenantId = TenantContext::require();
 
         $query->where(function (Builder $q) use ($tenantId) {
             $q->where('payments.tenant_id', $tenantId)

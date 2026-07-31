@@ -4,94 +4,77 @@ namespace App\Http\Controllers\Central;
 
 use Illuminate\Http\Request;
 use App\Models\Central\Tenant;
-use App\Models\Central\TenantLimit;
+use App\Models\Central\TenantLimitOverride;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class LimitationController extends Controller
 {
     public function superdataLimitsPage()
     {
-        $limits = TenantLimit::with(['tenant', 'package'])->paginate(20);
+        $limits = TenantLimitOverride::with('tenant')->paginate(20);
         $tenants = Tenant::orderBy('name')->get(['id', 'name', 'email']);
 
         return view('central.pages.data-limits', compact('limits', 'tenants'));
     }
 
-    
-
     public function superdataLimitsPost(Request $request)
     {
-        $validated = $request->validate([
-            'tenant_id'           => 'required|exists:central.tenants,id',
-            'package_id'          => 'nullable|exists:package_pricings,id',
-            'max_admins'          => 'nullable|integer|min:0',
-            'max_users'           => 'nullable|integer|min:0',
-            'max_brands'          => 'nullable|integer|min:0',
-            'max_sellers'         => 'nullable|integer|min:0',
-            'max_clients'         => 'nullable|integer|min:0',
-            'max_leads'           => 'nullable|integer|min:0',
-            'max_orders'          => 'nullable|integer|min:0',
-            'max_payment_links'   => 'nullable|integer|min:0',
-            'max_payments'        => 'nullable|integer|min:0',
+        $request->validate([
+            'tenant_id'         => 'required|exists:central.tenants,id',
+            'max_admins'        => 'nullable|integer|min:-1',
+            'max_brands'        => 'nullable|integer|min:-1',
+            'max_sellers'       => 'nullable|integer|min:-1',
+            'max_clients'       => 'nullable|integer|min:-1',
+            'max_leads'         => 'nullable|integer|min:-1',
+            'max_orders'        => 'nullable|integer|min:-1',
+            'max_payment_links' => 'nullable|integer|min:-1',
         ]);
 
-        $commonData = [
-            'package_id'          => $request->package_id,
-            'max_admins'          => $request->max_admins ?? 0,
-            'max_users'           => $request->max_users ?? 0,
-            'max_brands'          => $request->max_brands ?? 0,
-            'max_sellers'         => $request->max_sellers ?? 0,
-            'max_clients'         => $request->max_clients ?? 0,
-            'max_leads'           => $request->max_leads ?? 0,
-            'max_orders'          => $request->max_orders ?? 0,
-            'max_payment_links'   => $request->max_payment_links ?? 0,
-            'max_payments'        => $request->max_payments ?? 0,
-        ];
+        TenantLimitOverride::updateOrCreate(
+            ['tenant_id' => $request->tenant_id],
+            array_filter([
+                'max_admins'          => $request->input('max_admins'),
+                'max_brands'          => $request->input('max_brands'),
+                'max_sellers'         => $request->input('max_sellers'),
+                'max_clients'         => $request->input('max_clients'),
+                'max_leads_per_month' => $request->input('max_leads'),
+                'max_orders'          => $request->input('max_orders'),
+                'max_payment_links'   => $request->input('max_payment_links'),
+                'override_reason'     => 'Super-admin data limits panel',
+                'overridden_by'       => Auth::guard('super_admin')->id(),
+            ], fn ($value) => $value !== null && $value !== ''),
+        );
 
-        // dd($request->all(),$commonData);
-
-        if ($request->filled('tenant_id')) {
-            TenantLimit::updateOrCreate(
-                ['tenant_id' => $request->tenant_id],
-                $commonData
-            );
-        } else {
-            // Global default limits (not tied to a specific company)
-            TenantLimit::create($commonData);
-        }
-
-        return back()->with('success', 'CRM limits saved successfully.');
+        return back()->with('success', 'Tenant limit overrides saved successfully.');
     }
 
     public function superdataLimitsUpdate(Request $request, $id)
     {
-        $validated = $request->validate([
-            'max_admins'          => 'nullable|integer|min:0',
-            'max_users'           => 'nullable|integer|min:0',
-            'max_brands'          => 'nullable|integer|min:0',
-            'max_sellers'         => 'nullable|integer|min:0',
-            'max_clients'         => 'nullable|integer|min:0',
-            'max_leads'           => 'nullable|integer|min:0',
-            'max_orders'          => 'nullable|integer|min:0',
-            'max_payment_links'   => 'nullable|integer|min:0',
-            'max_payments'        => 'nullable|integer|min:0',
+        $request->validate([
+            'max_admins'        => 'nullable|integer|min:-1',
+            'max_brands'        => 'nullable|integer|min:-1',
+            'max_sellers'       => 'nullable|integer|min:-1',
+            'max_clients'       => 'nullable|integer|min:-1',
+            'max_leads'         => 'nullable|integer|min:-1',
+            'max_orders'        => 'nullable|integer|min:-1',
+            'max_payment_links' => 'nullable|integer|min:-1',
         ]);
 
-        $limit = TenantLimit::findOrFail($id);
-        // dd($request->all(),$validated,$limit);
+        $limit = TenantLimitOverride::findOrFail($id);
 
-        $limit->update([
-            'max_admins'          => $request->max_admins ?? $limit->max_admins,
-            'max_users'           => $request->max_users ?? $limit->max_users,
-            'max_brands'          => $request->max_brands ?? $limit->max_brands,
-            'max_sellers'         => $request->max_sellers ?? $limit->max_sellers,
-            'max_clients'         => $request->max_clients ?? $limit->max_clients,
-            'max_leads'           => $request->max_leads ?? $limit->max_leads,
-            'max_orders'          => $request->max_orders ?? $limit->max_orders,
-            'max_payment_links'   => $request->max_payment_links ?? $limit->max_payment_links,
-            'max_payments'        => $request->max_payments ?? $limit->max_payments,
-        ]);
+        $limit->update(array_filter([
+            'max_admins'          => $request->input('max_admins', $limit->max_admins),
+            'max_sellers'         => $request->input('max_sellers', $limit->max_sellers),
+            'max_brands'          => $request->input('max_brands', $limit->max_brands),
+            'max_clients'         => $request->input('max_clients', $limit->max_clients),
+            'max_leads_per_month' => $request->input('max_leads', $limit->max_leads_per_month),
+            'max_orders'          => $request->input('max_orders', $limit->max_orders),
+            'max_payment_links'   => $request->input('max_payment_links', $limit->max_payment_links),
+            'override_reason'     => 'Super-admin data limits panel',
+            'overridden_by'       => Auth::guard('super-admin')->id(),
+        ], fn ($value) => $value !== null && $value !== ''));
 
-        return back()->with('success', 'Company limits updated successfully.');
+        return back()->with('success', 'Tenant limit overrides updated successfully.');
     }
 }

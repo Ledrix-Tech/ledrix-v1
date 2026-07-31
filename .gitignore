@@ -1,8 +1,11 @@
 /.phpunit.cache
+/node_modules
 /public/build
 /public/hot
+/public/front-assets/media
 /public/storage
 /storage/*.key
+/storage/launch-recordings
 /vendor
 .env
 .env.backup

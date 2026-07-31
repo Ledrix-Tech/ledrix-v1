@@ -51,4 +51,14 @@ class TenantContext
 
         return null;
     }
+
+    /** Fail-closed tenant resolution for CRM workspace routes and exports. */
+    public static function require(): int
+    {
+        $tenantId = (int) (static::resolve() ?? 0);
+
+        abort_if($tenantId <= 0, 403, 'Tenant workspace could not be resolved for this account.');
+
+        return $tenantId;
+    }
 }

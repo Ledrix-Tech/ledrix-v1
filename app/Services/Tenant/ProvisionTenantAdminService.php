@@ -6,15 +6,30 @@ use App\Models\Admin;
 use App\Models\Central\AuditLog;
 use App\Models\Central\Tenant;
 use App\Models\Central\TenantUsageSnapshot;
+use App\Services\Tenant\TenantLimitService;
+use App\Services\Tenant\TenantUsageService;
 
 class ProvisionTenantAdminService
 {
+    public function __construct(
+        private TenantLimitService $limits,
+    ) {}
+
     /**
      * Find or create the primary CRM admin account for this tenant.
      * Copies the bcrypt hash so credentials match the tenant portal login.
      */
     public function provision(Tenant $tenant): Admin
     {
+        $exists = Admin::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('email', $tenant->email)
+            ->exists();
+
+        if (! $exists) {
+            $this->limits->assertCanCreateAdmin((int) $tenant->id);
+        }
+
         $admin = Admin::withoutGlobalScopes()->updateOrCreate(
             [
                 'tenant_id' => $tenant->id,
@@ -28,6 +43,8 @@ class ProvisionTenantAdminService
         );
 
         $this->syncAdminUsageCount($tenant);
+
+        app(TenantUsageService::class)->syncSnapshot((int) $tenant->id);
 
         AuditLog::record(
             action: 'tenant.admin_provisioned',

@@ -3,172 +3,187 @@
 namespace App\Http\Controllers\API\Client;
 
 use App\Models\Brand;
+use App\Services\LeadIntakeService;
+use App\Services\LeadScriptService;
+use App\Services\Tenant\SubscriptionAccessService;
+use App\Services\Tenant\TenantFeatureService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 
 class BrandConfigController extends Controller
 {
-    public function showScript($host)
+    public function __construct(
+        private LeadScriptService $leadScripts,
+        private SubscriptionAccessService $subscriptionAccess,
+        private TenantFeatureService $tenantFeatures,
+    ) {}
+
+    public function showScript(string $host)
     {
-        $brand = Brand::where('brand_url', 'like', "%$host%")->firstOrFail();
+        $brand = $this->leadScripts->resolveBrandFromHost($host);
+        abort_unless($brand, 404, 'Brand script not found.');
 
-        $script = str_replace(
-            ['{{ crm_endpoint }}', '{{ brand_key }}', '{{ brand_host }}'],
-            [route('crm.leads.post'), $brand->public_form_token, $brand->brand_url],
-            $brand->lead_script
-        );
+        $tenant = $brand->tenant;
+        if ($tenant && (! $this->subscriptionAccess->canUseCrm($tenant) || ! $this->tenantFeatures->enabled('api_access', (int) $brand->tenant_id))) {
+            return response('console.warn("Ledrix lead capture is inactive for this account.");', 200)
+                ->header('Content-Type', 'application/javascript')
+                ->header('Cache-Control', 'no-store');
+        }
 
-        return response($script, 200)->header('Content-Type', 'application/javascript');
+        return response($this->leadScripts->renderForBrand($brand), 200)
+            ->header('Content-Type', 'application/javascript')
+            ->header('Cache-Control', 'public, max-age=300');
     }
-
 
     public function adminDomainScripts()
     {
-        $brands = Brand::all();
-        return view('admin.pages.domain-script', compact('brands'));
+        $admin = auth('admin')->user();
+
+        $brands = Brand::query()
+            ->when($admin?->tenant_id, fn ($query) => $query->where('tenant_id', $admin->tenant_id))
+            ->orderBy('brand_name')
+            ->get();
+
+        return view('admin.pages.domain-scripts', [
+            'brands'       => $brands,
+            'scriptService'=> $this->leadScripts,
+        ]);
     }
 
     public function domainScriptStore(Request $request)
     {
         $data = $request->validate([
-            'brand_id' => 'required|exists:brands,id',
-            'lead_script' => 'required|string',
+            'brand_id'              => 'required|exists:brands,id',
+            'lead_script'           => 'nullable|string',
             'data_fields.crm_field' => 'nullable|array',
-            'data_fields.site_field' => 'nullable|array',
+            'data_fields.site_field'=> 'nullable|array',
         ]);
 
-        $brand = Brand::findOrFail($data['brand_id']);
-        // dd($request->all(),$data,$brand);
+        $brand = $this->authorizedBrand((int) $data['brand_id']);
+        $mapping = $this->buildFieldMapping($request);
 
-        // Build clean field mapping (CRM field -> Website field)
+        $this->backupBrandScript($brand);
+
+        $brand->update([
+            'lead_script'   => $data['lead_script'] ?? null,
+            'field_mapping' => $mapping,
+        ]);
+
+        return back()->with('success', "Script settings saved for {$brand->brand_name}.");
+    }
+
+    public function domainScriptUpdate(Request $request, Brand $brand)
+    {
+        $brand = $this->authorizedBrand($brand->id);
+
+        $validated = $request->validate([
+            'lead_script'           => 'nullable|string',
+            'data_fields.crm_field' => 'nullable|array',
+            'data_fields.site_field'=> 'nullable|array',
+        ]);
+
+        $mapping = $this->buildFieldMapping($request);
+
+        $this->backupBrandScript($brand);
+
+        $brand->update([
+            'lead_script'   => $validated['lead_script'] ?? null,
+            'field_mapping' => $mapping,
+        ]);
+
+        return back()->with('success', "Script settings updated for {$brand->brand_name}.");
+    }
+
+    public function testLeadCapture(Brand $brand, LeadIntakeService $intake)
+    {
+        $brand = $this->authorizedBrand($brand->id);
+
+        try {
+            $result = $intake->storeAdminTestLead($brand);
+
+            return response()->json([
+                'ok'        => true,
+                'message'   => $result['duplicate']
+                    ? 'Test lead already exists (duplicate idempotency key).'
+                    : 'Test lead captured successfully.',
+                'lead_id'   => $result['lead']->id,
+                'duplicate' => $result['duplicate'],
+                'email'     => $result['lead']->email,
+            ]);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => $e->getMessage() ?: 'Lead capture test failed.',
+            ], $e->getStatusCode());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => collect($e->errors())->flatten()->first() ?: 'Validation failed.',
+            ], 422);
+        }
+    }
+
+    public function checkScriptStatus(Brand $brand)
+    {
+        $brand = $this->authorizedBrand($brand->id);
+
+        $url = $this->leadScripts->scriptUrlForBrand($brand);
+        $tenant = $brand->tenant;
+        $active = $tenant
+            && $this->subscriptionAccess->canUseCrm($tenant)
+            && $this->tenantFeatures->enabled('api_access', (int) $brand->tenant_id);
+
+        return response()->json([
+            'ok'           => true,
+            'script_url'   => $url,
+            'script_active'=> (bool) $active,
+            'brand_host'   => $brand->brand_host,
+            'has_mapping'  => ! empty($brand->field_mapping),
+            'has_override' => ! empty($brand->lead_script),
+        ]);
+    }
+
+    private function authorizedBrand(int $brandId): Brand
+    {
+        $tenantId = TenantContext::require();
+
+        return Brand::query()
+            ->whereKey($brandId)
+            ->where('tenant_id', $tenantId)
+            ->firstOrFail();
+    }
+
+    /** @return array<string, string> */
+    private function buildFieldMapping(Request $request): array
+    {
         $mapping = [];
         $crmFields = $request->input('data_fields.crm_field', []);
         $siteFields = $request->input('data_fields.site_field', []);
 
         foreach ($crmFields as $i => $crmKey) {
-            $crmKey = trim($crmKey);
-            $siteKey = trim($siteFields[$i] ?? '');
+            $crmKey = trim((string) $crmKey);
+            $siteKey = trim((string) ($siteFields[$i] ?? ''));
             if ($crmKey && $siteKey) {
                 $mapping[$crmKey] = $siteKey;
             }
         }
 
-        // Optional: backup previous data before overwriting
-        if ($brand->lead_script || $brand->field_mapping) {
-            Storage::disk('local')->put(
-                "backups/brand_scripts/{$brand->id}_" . now()->format('Ymd_His') . ".json",
-                json_encode([
-                    'lead_script' => $brand->lead_script,
-                    'field_mapping' => $brand->field_mapping,
-                ], JSON_PRETTY_PRINT)
-            );
-        }
-
-        // Update Brand
-        $brand->update([
-            'lead_script' => $data['lead_script'],
-            'field_mapping' => $mapping,
-        ]);
-
-        return back()->with('success', "✅ Script and field mapping updated for {$brand->brand_name}!");
+        return $mapping ?: LeadScriptService::defaultFieldMapping();
     }
 
-    public function domainScriptUpdate(Request $request, Brand $brand)
+    private function backupBrandScript(Brand $brand): void
     {
-        $validated = $request->validate([
-            'lead_script' => 'required|string',
-            'data_fields.crm_field' => 'nullable|array',
-            'data_fields.site_field' => 'nullable|array',
-        ]);
-
-        $mapping = [];
-        $crmFields  = $request->input('data_fields.crm_field', []);
-        $siteFields = $request->input('data_fields.site_field', []);
-        foreach ($crmFields as $i => $crmKey) {
-            $crmKey = trim($crmKey);
-            $siteKey = trim($siteFields[$i] ?? '');
-            if ($crmKey && $siteKey) {
-                $mapping[$crmKey] = $siteKey;
-            }
+        if (! $brand->lead_script && ! $brand->field_mapping) {
+            return;
         }
 
-        // Backup previous version
         Storage::disk('local')->put(
-            "backups/brand_scripts/{$brand->id}_" . now()->format('Ymd_His') . ".json",
+            "backups/brand_scripts/{$brand->id}_" . now()->format('Ymd_His') . '.json',
             json_encode([
-                'lead_script' => $brand->lead_script,
-                'field_mapping' => $brand->data_fields,
+                'lead_script'   => $brand->lead_script,
+                'field_mapping' => $brand->field_mapping,
             ], JSON_PRETTY_PRINT)
         );
-
-        $brand->update([
-            'lead_script' => $validated['lead_script'],
-            'field_mapping' => $mapping,
-        ]);
-
-        return back()->with('success', "✅ Updated script for {$brand->brand_name}.");
-    }
-
-    public function serveDomainScript($host)
-    {
-        // Normalize domain
-        $host = str_replace(['.js', 'www.'], '', $host);
-
-        // $brand = Brand::where('brand_host', 'like', "%$host%")->first();
-        $brand = Brand::where('brand_url', 'like', "%{$host}%")
-            ->orWhere('brand_name', 'like', "%{$host}%")
-            ->orWhere('brand_url', 'like', "%127.0.0.1%{$host}%")
-            ->firstOrFail();
-
-
-        if (!$brand) {
-            $fallback = $this->defaultScript();
-            return response($fallback, 200)->header('Content-Type', 'application/javascript');
-        }
-
-        // Replace placeholders in the script
-        $script = $brand->lead_script ?? $this->defaultScript();
-        $script = str_replace(
-            ['{{crm_endpoint}}', '{{brand_key}}', '{{brand_host}}'],
-            [
-                route('crm.leads.post'),
-                $brand->brand_key ?? $brand->id,
-                $brand->brand_host,
-            ],
-            $script
-        );
-
-        return response($script, 200)
-            ->header('Content-Type', 'application/javascript')
-            ->header('Cache-Control', 'public, max-age=300');
-    }
-
-    protected function defaultScript(): string
-    {
-        return <<<JS
-        (() => {
-        const form = document.querySelector('#lead-form');
-        if (!form) return;
-        form.addEventListener('submit', async e => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(form));
-            data.brand_key = '{{brand_key}}';
-            try {
-            const res = await fetch('{{crm_endpoint}}', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            const json = await res.json();
-            if (json.ok) alert('Thank you! We received your request.');
-            else alert('Error: ' + json.message);
-            } catch (err) {
-            console.error(err);
-            alert('Network error');
-            }
-        });
-        })();
-        JS;
     }
 }

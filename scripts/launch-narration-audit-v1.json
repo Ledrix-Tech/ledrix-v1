@@ -1,0 +1,30 @@
+{
+  "voice": "en-US-JennyNeural",
+  "title": "Ledrix CRM Audit — Admin & Seller (10 min)",
+  "note": "Subtitles only — original voiceover from CRM Audit.mp4 is preserved.",
+  "lines": [
+    "Welcome to the Ledrix CRM SaaS V1 launch audit.",
+    "This walkthrough covers the Admin and Seller workspaces on ledrix.co.",
+    "Part one — Admin panel. Sign in to manage your entire agency workspace.",
+    "The Admin dashboard gives you a real-time view of leads, orders, and team activity.",
+    "Every tenant is isolated — your brands, sellers, and client data stay secure.",
+    "In Leads, capture inbound prospects and assign them to the right seller instantly.",
+    "Open any lead to see status, assignment history, and next actions in one place.",
+    "Orders connect every deal to payment status — no more switching between tools.",
+    "Track the full funnel from first contact through closed and paid.",
+    "The Clients section lists every customer in your workspace with clear access control.",
+    "Manage Sellers — add team members, set roles, and monitor performance.",
+    "Brands let multi-brand agencies run separate pipelines under one tenant.",
+    "Payments and brand payouts give finance visibility tied directly to CRM records.",
+    "Account keys and domain scripts connect your intake forms and webhooks.",
+    "Part two — Seller portal. Built for closers who need focus, not admin clutter.",
+    "The Seller dashboard shows your personal pipeline and performance at a glance.",
+    "Assigned Leads — work your queue and update status as deals progress.",
+    "Orders — convert leads to paid clients with payment links and milestones.",
+    "Clients and Briefs keep customer context next to every deal you are closing.",
+    "Brand and payout views help sellers see earnings without leaving the CRM.",
+    "Ledrix connects admin oversight with seller execution in one platform.",
+    "That completes the Ledrix CRM V1 audit — Admin and Seller.",
+    "Start your free trial at ledrix.co — no credit card required."
+  ]
+}

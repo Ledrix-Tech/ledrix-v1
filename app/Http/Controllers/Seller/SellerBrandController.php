@@ -11,9 +11,14 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Support\PortalAuthorization;
 use App\Support\TenantContext;
+use App\Services\Tenant\TenantLimitService;
 
 class SellerBrandController extends Controller
 {
+    public function __construct(
+        private TenantLimitService $limits,
+    ) {}
+
     public function sellerBrandPost(Request $request)
     {
         PortalAuthorization::requireAdmin();
@@ -22,6 +27,11 @@ class SellerBrandController extends Controller
             'brand_name' => 'required|string|max:255',
             'brand_url'  => 'required|url',
         ]);
+
+        $tenantId = TenantContext::resolve();
+        if ($tenantId) {
+            $this->limits->assertCanCreateBrand('ppc', (int) $tenantId);
+        }
 
         $brand = new Brand();
         $brand->brand_name = $validated['brand_name'];
@@ -42,91 +52,23 @@ class SellerBrandController extends Controller
         return view('sellers.pages.brands', compact('brands'));
     }
 
-    // optimize calculation for brand payouts
     public function sellerBrandPayments(Request $request)
     {
         $seller = auth('seller')->user();
         $admin  = auth('admin')->user();
 
-        // 🚫 Restrict sellers first
         if ($seller) {
             abort(403, 'Sellers cannot access this page.');
         }
 
-        // ✅ Only allow specific admin roles
-        if (! $admin || ! in_array($admin->role, ['admin', 'finance', 'white_wolf'])) {
-            return back()->with('error', 'You do not have permission to access this page.');
+        if ($admin && in_array($admin->role, ['admin', 'finance', 'white_wolf'], true)) {
+            return redirect()->route('admin.brand-payments.get');
         }
 
-        // ---- everything below unchanged ----
-        $perOrderAgg = DB::table('payment_links')
-            ->select('order_id')
-            ->selectRaw('MAX(order_total_snapshot) AS snapshot')
-            ->selectRaw('SUM(CASE WHEN status = "paid" THEN unit_amount ELSE 0 END) AS paid')
-            ->groupBy('order_id');
-
-        $brandPayments = DB::table('brands')
-            ->leftJoin('orders', 'orders.brand_id', '=', 'brands.id')
-            ->leftJoinSub($perOrderAgg, 'op', fn($join) => $join->on('orders.id', '=', 'op.order_id'))
-            ->select(
-                'brands.id',
-                'brands.brand_name',
-                'brands.brand_url',
-                DB::raw('COUNT(DISTINCT orders.id) AS orders_count'),
-                DB::raw('COALESCE(SUM(op.paid), 0) AS total_paid'),
-                DB::raw('COALESCE(SUM(op.snapshot), 0) AS total_snapshot')
-            )
-            ->groupBy('brands.id', 'brands.brand_name', 'brands.brand_url')
-            ->get()
-            ->map(function ($row) {
-                $due = $row->total_snapshot - $row->total_paid;
-                return [
-                    'id'           => $row->id,
-                    'brand_name'   => $row->brand_name,
-                    'brand_url'    => $row->brand_url,
-                    'orders_count' => (int) $row->orders_count,
-                    'total_paid'   => (int) $row->total_paid,
-                    'total_due'    => max((int) $due, 0),
-                ];
-            });
-
-        $orders = Order::with(['brand', 'client', 'seller'])
-            ->latest('id')
-            ->paginate(20)
-            ->withQueryString();
-
-        $providerPayments = DB::table('payment_links')
-            ->select('provider')
-            ->selectRaw('SUM(CASE WHEN status = "paid" THEN unit_amount ELSE 0 END) AS total_paid')
-            ->groupBy('provider')
-            ->pluck('total_paid', 'provider');
-
-        $paymentPaidAmount = (int) DB::table('payment_links')
-            ->where('status', 'paid')
-            ->sum('unit_amount');
-
-        $perOrderSnapshots = DB::table('payment_links')
-            ->selectRaw('order_id, MAX(order_total_snapshot) AS snapshot')
-            ->groupBy('order_id');
-
-        $totalOrderSnapshot = (int) DB::table(DB::raw("({$perOrderSnapshots->toSql()}) AS t"))
-            ->mergeBindings($perOrderSnapshots)
-            ->sum('snapshot');
-
-        $paymentDueAmount = $totalOrderSnapshot - $paymentPaidAmount;
-        $revenue = $paymentPaidAmount;
-
-        return view('admin.pages.brand-payments', [
-            'revenue'          => $revenue,
-            'paymentPaid'      => $paymentPaidAmount,
-            'paymentDue'       => max($paymentDueAmount, 0),
-            'providerPayments' => $providerPayments,
-            'orders'           => $orders,
-            'brandPayments'    => $brandPayments,
-        ]);
+        return back()->with('error', 'You do not have permission to access this page.');
     }
 
-    // public function sellerBrandPayments(Request $request)
+    // public function sellerBrandPaymentsLegacy(Request $request)
     // {
     //     $seller = auth('seller')->user();
     //     $admin  = auth('admin')->user();

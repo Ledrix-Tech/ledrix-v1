@@ -26,7 +26,7 @@
             </a>
         </li>
         <li>
-            <a class="sa-nav-link {{ in_array($route, ['super-admin.company-profile.get', 'super-admin.tenant.show']) ? 'active' : '' }}"
+            <a class="sa-nav-link {{ in_array($route, ['super-admin.company-profile.get', 'super-admin.tenant.show', 'super-admin.tenant.features.get']) ? 'active' : '' }}"
                 href="{{ route('super-admin.company-profile.get') }}">
                 <i class="bi bi-buildings"></i>
                 <span>Tenants</span>

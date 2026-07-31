@@ -66,6 +66,24 @@ class AppServiceProvider extends ServiceProvider
             $view->with('tenantHasApiAccess', tenantFeature('api_access'));
             $view->with('tenantHasDualInvoicing', tenantFeature('dual_invoicing'));
             $view->with('tenantHasSellerLeaderboard', tenantFeature('seller_leaderboard'));
+            $view->with('tenantHasWhiteLabel', tenantFeature('white_label'));
+            $view->with('tenantHasUpworkModule', tenantFeature('upwork_module'));
+        });
+
+        View::composer('admin.*', function ($view) {
+            if (! function_exists('tenantFeature')) {
+                return;
+            }
+
+            $view->with('tenantHasPayments', tenantHasPayments());
+            $view->with('tenantHasClientPortal', tenantFeature('client_portal'));
+            $view->with('tenantHasSupportTickets', tenantFeature('support_tickets'));
+            $view->with('tenantHasStripe', tenantFeature('stripe'));
+            $view->with('tenantHasPayPal', tenantFeature('paypal'));
+            $view->with('tenantHasApiAccess', tenantFeature('api_access'));
+            $view->with('tenantHasDualInvoicing', tenantFeature('dual_invoicing'));
+            $view->with('tenantHasUpworkModule', tenantFeature('upwork_module'));
+            $view->with('tenantHasWhiteLabel', tenantFeature('white_label'));
         });
 
         // dynamic route prfix changed

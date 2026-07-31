@@ -97,7 +97,7 @@ class SellerLeadsController extends Controller
      */
     public function sellerLeadDetails($id)
     {
-        $lead = Lead::with([
+        $lead = Lead::withoutGlobalScopes()->with([
             'brand:id,brand_name,brand_url',
             'seller:id,name,email,brand_id,is_seller',
             'client:id,name,email,phone'

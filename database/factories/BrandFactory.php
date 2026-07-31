@@ -12,6 +12,7 @@ class BrandFactory extends Factory
             'brand_name' => $this->faker->company(),
             'brand_url'  => $this->faker->url(),
             'status'     => 'Active',
+            'tenant_id'  => 1,
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Payment;
 use App\Models\PaymentLink;
 use App\Support\PpcWebhookVerifier;
+use App\Services\Tenant\TenantFeatureService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -12,6 +13,7 @@ class PaymentRefundProcessor
 {
     public function __construct(
         private PpcWebhookVerifier $webhookVerifier,
+        private TenantFeatureService $tenantFeatures,
     ) {}
 
     public function processStripeRefundEvent(\Stripe\Event $event): void
@@ -92,6 +94,10 @@ class PaymentRefundProcessor
             return;
         }
 
+        if (! $this->chargebackTrackingAllowed($payment)) {
+            return;
+        }
+
         $amount = (int) ($dispute->amount ?? 0);
         $status = (string) ($dispute->status ?? '');
 
@@ -169,6 +175,10 @@ class PaymentRefundProcessor
             ->first();
 
         if (! $payment) {
+            return;
+        }
+
+        if (! $this->chargebackTrackingAllowed($payment)) {
             return;
         }
 
@@ -376,5 +386,25 @@ class PaymentRefundProcessor
 
             Log::info('Dispute won', ['payment_id' => $payment->id]);
         });
+    }
+
+    private function chargebackTrackingAllowed(Payment $payment): bool
+    {
+        $tenantId = (int) ($payment->tenant_id ?? 0);
+
+        if (! $tenantId) {
+            return true;
+        }
+
+        if ($this->tenantFeatures->enabled('chargeback_tracking', $tenantId)) {
+            return true;
+        }
+
+        Log::info('Chargeback/dispute ignored — plan excludes chargeback tracking', [
+            'payment_id' => $payment->id,
+            'tenant_id'  => $tenantId,
+        ]);
+
+        return false;
     }
 }

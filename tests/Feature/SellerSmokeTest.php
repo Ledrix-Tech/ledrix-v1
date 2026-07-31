@@ -31,6 +31,7 @@ class SellerSmokeTest extends TestCase
     {
         parent::setUp();
         $this->mockTenantFeaturesEnabled();
+        $this->mockCrmWorkspaceAccess();
     }
 
     public function test_seller_login_page_loads(): void
@@ -85,6 +86,7 @@ class SellerSmokeTest extends TestCase
         ['brand' => $brand, 'lead' => $lead, 'client' => $client, 'seller' => $seller] = $this->createPaymentLeadGraph();
 
         $order = Order::create([
+            'tenant_id'       => $brand->tenant_id ?? 1,
             'lead_id'         => $lead->id,
             'brand_id'        => $brand->id,
             'seller_id'       => $seller->id,
