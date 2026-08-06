@@ -9,16 +9,21 @@ Complete these steps once at launch, then run **post-deploy** after every releas
 
 - [ ] Server: PHP 8.2+, MySQL, Composer, Node (for asset build if needed)
 - [ ] `.env` configured (see §2) — **`APP_DEBUG=false`**, correct **`APP_URL`**
-- [ ] Databases migrated (central + tenant)
+- [ ] **Both** databases migrated: primary CRM + **central** SaaS (see §3)
 - [ ] `storage/` and `bootstrap/cache/` writable
 - [ ] **One cron job** registered (see §4)
 - [ ] SMTP mail working (send a test notification)
 - [ ] `QUEUE_CONNECTION=database` (not `sync`)
-- [ ] Payment webhooks registered in Stripe/PayPal dashboards (see §6)
+- [ ] CRM payment webhooks registered in Stripe/PayPal (see §6)
+- [ ] **Tenant SaaS** Stripe platform webhook registered (see §6.1)
+- [ ] Super Admin → Payment Accounts filled (Stripe / PayFast / Meezan / JazzCash / Payoneer)
+- [ ] `BILLING_ADMIN_EMAIL` set for ops alerts (demo/contact/support)
+- [ ] Super Admin owner account created + **2FA enabled**
 - [ ] Per-brand **Account Keys** filled (Stripe/PayPal + webhook secrets)
 - [ ] Logo assets present under `public/admin-assets/dpm-logos/`
 - [ ] Post-deploy script run: `bash scripts/post-deploy.sh`
 - [ ] Verify: `php artisan schedule:list`
+- [ ] Smoke-test: one USD Stripe + one PKR (PayFast or Meezan) subscription payment
 
 ---
 
@@ -96,13 +101,18 @@ MAIL_PASSWORD=...
 MAIL_FROM_ADDRESS=no-reply@yourdomain.com
 MAIL_FROM_NAME="${APP_NAME}"
 
-# Stripe (CRM orders + tenant billing fallback)
+# Stripe (CRM orders + tenant billing fallback / seed for Payment Accounts)
 STRIPE_KEY=pk_live_...
 STRIPE_SECRET=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...   # global / Upwork fallback
+STRIPE_WEBHOOK_SECRET=whsec_...   # CRM brand webhooks + platform SaaS webhook
 
 # PayPal (env fallback when brand keys missing)
 PAYPAL client vars + PAYPAL webhook_id if using env-level PayPal
+
+# SaaS billing ops
+BILLING_ADMIN_EMAIL=billing@yourdomain.com   # demo/contact/ops alerts
+# Optional gateway env seeds (prefer Super Admin → Payment Accounts in prod):
+# JAZZCASH_*, PAYFAST_*, MEEZAN_*, PAYONEER_RECEIVER_EMAIL
 ```
 
 **Never commit `.env` or real passwords to git.**
@@ -111,14 +121,17 @@ PAYPAL client vars + PAYPAL webhook_id if using env-level PayPal
 
 ## 3. Database migrations
 
-Run on every deploy (also in post-deploy script):
+Run **both** connections on every deploy (post-deploy scripts do this):
 
 ```bash
+# Primary CRM DB (default connection)
 php artisan migrate --force
+
+# Central SaaS / Super Admin DB (tenants, invoices, billing, SA users)
+php artisan migrate --database=central --path=database/migrations/central --force
 ```
 
-Central DB and tenant DB must both be reachable. Confirm `jobs` and `failed_jobs` tables exist when using `QUEUE_CONNECTION=database`.
-
+Confirm both DBs are reachable. Confirm `jobs` and `failed_jobs` tables exist when using `QUEUE_CONNECTION=database`.
 ---
 
 ## 4. Cron & scheduler (queues + scheduled tasks)
@@ -194,6 +207,7 @@ Manual equivalent:
 ```bash
 php artisan down --retry=60
 php artisan migrate --force
+php artisan migrate --database=central --path=database/migrations/central --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
@@ -209,6 +223,7 @@ Register these URLs in **Stripe** and **PayPal** dashboards. Base URL = your `AP
 
 | Purpose | Method | URL |
 |--------|--------|-----|
+| **SaaS tenant Stripe** (subscriptions) | POST | `{APP_URL}/api/webhooks/platform/stripe` |
 | PPC Stripe capture | POST | `{APP_URL}/api/webhooks/stripe` |
 | PPC PayPal capture | POST | `{APP_URL}/api/webhooks/paypal` |
 | PPC Stripe refunds | POST | `{APP_URL}/api/webhooks/stripe/refund` |
@@ -219,6 +234,37 @@ Register these URLs in **Stripe** and **PayPal** dashboards. Base URL = your `AP
 | Upwork Stripe dispute | POST | `{APP_URL}/api/webhooks/upwork-stripe/dispute` |
 | Upwork Stripe capture | POST | `{APP_URL}/api/webhooks/upwork/stripe` |
 | Upwork PayPal capture | POST | `{APP_URL}/api/webhooks/upwork/paypal` |
+
+### 6.1 Tenant SaaS billing (Ledrix subscriptions)
+
+Managed in **Super Admin → Payment Accounts** (preferred over `.env` alone).
+
+| Provider | Role |
+|----------|------|
+| Stripe | International USD checkout |
+| PayFast | Pakistan PKR hosted checkout |
+| Meezan | PKR bank transfer + Raast QR (manual confirm) |
+| JazzCash | PKR merchant checkout (if enabled) |
+| Payoneer | Manual USD invoice (SA confirms) |
+
+**Stripe platform webhook (required for reliable activation):**
+
+1. Stripe Dashboard → Webhooks → Add endpoint  
+   URL: `{APP_URL}/api/webhooks/platform/stripe`  
+   Event: `checkout.session.completed` (minimum)
+2. Copy signing secret → Super Admin → Payment Accounts → Stripe → **Webhook secret**  
+   (or `STRIPE_WEBHOOK_SECRET` as seed)
+
+Browser return URLs also activate subscriptions (`/billing/stripe/success`, PayFast/JazzCash returns) and write **Webhook Events** in Super Admin. Prefer the Stripe platform webhook so activation does not depend on the browser.
+
+**Tenant payment emails (queued — cron required):**
+
+| When | Mail |
+|------|------|
+| Invoice issued / payment due | `TenantSubscriptionDueMail` + link to invoice |
+| Payment confirmed / subscription activated | `TenantSubscriptionActivatedMail` + paid invoice details + **View invoice** link |
+
+Tenant invoice UI: `/tenant-profile/billing/invoices/{id}` (also under Admin CRM → Billing).
 
 ### Stripe events to subscribe
 
@@ -276,7 +322,8 @@ Without these, webhooks may reject or fail in production.
 
 - Logo: `public/admin-assets/dpm-logos/logo-ic.png` (emails use `APP_URL` + `asset()`).
 - All mail templates use `resources/views/emails/layouts/ledrix.blade.php`.
-- Most notifications implement `ShouldQueue` — **cron must be running** (§4).
+- Most notifications / SaaS mails implement `ShouldQueue` — **cron must be running** (§4).
+- Ops alerts (demo requests, contact form) go to `BILLING_ADMIN_EMAIL` (falls back to `MAIL_FROM_ADDRESS`).
 
 ### Test mail
 
@@ -284,6 +331,13 @@ Without these, webhooks may reject or fail in production.
 php artisan tinker
 # Mail::raw('Test', fn ($m) => $m->to('you@example.com')->subject('Ledrix test'));
 ```
+
+### Super Admin
+
+- Login: `{APP_URL}/super-admin/login`
+- Enable **2FA Security** for owner/admin accounts
+- Seed owner via seeder / existing invite flow if needed
+- Team invites are owner-only
 
 ### Tenant renewal approval email
 
@@ -357,6 +411,9 @@ Failed jobs are pruned weekly by the scheduler (`queue:prune-failed`).
 | Symptom | Fix |
 |---------|-----|
 | Emails never send | Check `QUEUE_CONNECTION=database`, cron running, `jobs` table, SMTP creds |
+| Subscription paid but no invoice email | Cron/queue; check `failed_jobs`; tenant email on central `tenants` |
+| SaaS Stripe paid but not activated | Platform webhook URL + webhook secret in Payment Accounts; check Super Admin → Webhook Events |
+| Central tables missing | `php artisan migrate --database=central --path=database/migrations/central --force` |
 | Stripe webhook 400/500 | Brand `stripe_webhook_secret` in Account Keys; `APP_URL` correct |
 | PayPal webhook rejected | Brand `paypal_webhook_id`; production requires webhook_id |
 | Logo broken in email | `APP_URL` must be public HTTPS; file exists at `public/admin-assets/dpm-logos/logo-ic.png` |
@@ -374,6 +431,8 @@ Failed jobs are pruned weekly by the scheduler (`queue:prune-failed`).
 - [ ] Admin/seller use POST logout (already implemented)
 - [ ] Rate limits on auth routes active
 - [ ] Stripe/PayPal **live** keys only on production server
+- [ ] Super Admin 2FA enabled for owner (and admins)
+- [ ] Default seeder passwords changed / not used in production
 
 ---
 
@@ -424,8 +483,10 @@ For most Ledrix installs, **cron + scheduler alone is enough**.
 php artisan schedule:list
 php artisan route:list --path=webhooks
 php artisan migrate:status
+php artisan migrate:status --database=central --path=database/migrations/central
 curl -I https://yourdomain.com
-# Trigger a test payment in Stripe test mode OR send test email
+# Trigger a test SaaS Stripe checkout (test mode) — confirm invoice email + /tenant-profile/billing invoice View
+# Or: php artisan tinker → send test Mail::raw
 tail -f storage/logs/scheduler.log   # confirm cron hits every minute
 ```
 

@@ -3,6 +3,7 @@
 @section('title', 'Ledrix | Tenant Plan & Access')
 
 @section('central-content')
+    @php $canManage = auth('super_admin')->user()?->isAdmin() ?? false; @endphp
 
     <div class="sa-page-header">
         <div>
@@ -10,12 +11,12 @@
             <h1>Plan &amp; access — {{ $tenant->name }}</h1>
             <p>
                 Subscribed package: <strong>{{ $tenant->plan?->name ?? 'None assigned' }}</strong>
-                @if ($tenant->plan)
+                @if ($tenant->plan && $canManage)
                     · <a href="{{ route('super-admin.pricing-packages.get') }}">Edit pricing packages</a>
                 @endif
             </p>
         </div>
-        @if ($hasOverrides)
+        @if ($hasOverrides && $canManage)
             <form method="POST" action="{{ route('super-admin.tenant.features.reset', $tenant->id) }}"
                 onsubmit="return confirm('Clear all feature and limit overrides? Package defaults will apply immediately.')">
                 @csrf
@@ -48,9 +49,13 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('super-admin.tenant.features.update', $tenant->id) }}">
+    <form method="POST" action="{{ route('super-admin.tenant.features.update', $tenant->id) }}"
+        @unless($canManage) onsubmit="return false;" @endunless>
         @csrf
         @method('PUT')
+        @unless($canManage)
+            <div class="alert alert-secondary">View only — ask an admin or owner to change plan overrides.</div>
+        @endunless
 
         {{-- Override meta --}}
         <div class="row g-4 mb-4">
@@ -220,11 +225,13 @@
             </div>
         @endforeach
 
-        <div class="text-end pb-4">
-            <button type="submit" class="btn btn-sa-primary btn-lg">
-                <i class="bi bi-check2-circle me-1"></i> Save plan &amp; access settings
-            </button>
-        </div>
+        @if ($canManage)
+            <div class="text-end pb-4">
+                <button type="submit" class="btn btn-sa-primary btn-lg">
+                    <i class="bi bi-check2-circle me-1"></i> Save plan &amp; access settings
+                </button>
+            </div>
+        @endif
     </form>
 
 @endsection

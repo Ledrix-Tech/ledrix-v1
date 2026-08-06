@@ -35,8 +35,9 @@
         </a>
         <a href="{{ route('super-admin.subscription-payments.get') }}" class="sa-stat">
             <div class="sa-stat-icon"><i class="bi bi-wallet2"></i></div>
-            <div class="sa-stat-label">Payoneer Due</div>
+            <div class="sa-stat-label">Pending Manual Payments</div>
             <div class="sa-stat-value">{{ $pendingSubscriptionPayments }}</div>
+            <div class="sa-stat-meta">Meezan + Payoneer</div>
         </a>
     </div>
 

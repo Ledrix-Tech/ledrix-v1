@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Upwork;
 
-use Carbon\Carbon;
-use App\Models\Admin;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Support\TenantContext;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
@@ -38,13 +39,27 @@ class AuthController extends Controller
             return view('errors.restricted');
         }
 
-        // 🔹 Normal Admin Login
-        if (Auth::guard('admin')->attempt($credentials)) {
+        TenantContext::clear();
+        session()->forget('tenant_id');
+
+        // Unscoped lookup — guest login must ignore leftover BelongsToTenant session.
+        $admin = Admin::withoutGlobalScopes()
+            ->where('email', $credentials['email'])
+            ->get()
+            ->first(fn (Admin $candidate) => Hash::check($credentials['password'], $candidate->password));
+
+        if ($admin) {
+            Auth::guard('admin')->login($admin);
+            $request->session()->regenerate();
+            if ($admin->tenant_id) {
+                session(['tenant_id' => $admin->tenant_id]);
+                TenantContext::set((int) $admin->tenant_id);
+            }
             session(['role' => 'up_admin']);
+
             return redirect()->route('upwork.index.get')->with('success', 'Login as Admin Successfully !!!');
         }
 
-        // ❌ Invalid login
         return back()->with('error', '❌ Record not matched with data !!!');
     }
 
@@ -54,8 +69,7 @@ class AuthController extends Controller
             'email' => 'required|email',
         ]);
 
-        // Check if email exists in admins or sellers
-        $admin  = Admin::where('email', $request->email)->first();
+        $admin = Admin::withoutGlobalScopes()->where('email', $request->email)->first();
         if (!$admin) {
             return back()->with('error', 'Email not found in our records.');
         }
@@ -109,14 +123,12 @@ class AuthController extends Controller
             return back()->with('error', 'Invalid or expired password reset token.');
         }
 
-        // Update password in the right table
-        if (Admin::where('email', $request->email)->exists()) {
-            Admin::where('email', $request->email)->update([
-                'password' => Hash::make($request->password)
-            ]);
-        } else {
+        $admin = Admin::withoutGlobalScopes()->where('email', $request->email)->first();
+        if (! $admin) {
             return back()->with('error', 'Account not found.');
         }
+
+        $admin->forceFill(['password' => Hash::make($request->password)])->save();
         DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
         return redirect()->route('upwork.login.get')->with('success', 'Password updated successfully!');

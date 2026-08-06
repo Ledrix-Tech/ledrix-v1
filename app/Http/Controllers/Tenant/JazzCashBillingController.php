@@ -7,6 +7,7 @@ use App\Models\Central\TenantPayment;
 use App\Services\Billing\ActivateTenantSubscriptionService;
 use App\Services\Billing\CreateSubscriptionInvoiceService;
 use App\Services\Billing\JazzCashService;
+use App\Services\Billing\PlatformWebhookRecorder;
 use App\Services\Tenant\SubscriptionAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -73,6 +74,7 @@ class JazzCashBillingController extends Controller
         Request $request,
         JazzCashService $jazzCash,
         ActivateTenantSubscriptionService $activationService,
+        PlatformWebhookRecorder $recorder,
     ) {
         $response = $request->all();
 
@@ -105,8 +107,18 @@ class JazzCashBillingController extends Controller
             ]),
         ]);
 
+        $eventId = 'jazzcash_' . ($response['pp_TxnRefNo'] ?? ('payment_' . $payment->id));
+
         if (! $jazzCash->isSuccessfulResponse($response)) {
             $payment->update(['status' => 'failed']);
+            $recorder->recordAndProcess(
+                'jazzcash',
+                $eventId . '_failed',
+                'jazzcash.return.failed',
+                $response,
+                (int) $payment->tenant_id,
+                fn ($row) => $row->markIgnored(),
+            );
 
             return redirect()
                 ->route('tenant.billing')
@@ -123,13 +135,27 @@ class JazzCashBillingController extends Controller
         }
 
         try {
-            $activationService->activate(
-                $payment,
-                renewedBy: 'jazzcash',
-                payloadMerge: [
-                    'jazzcash_txn_ref' => $response['pp_TxnRefNo'] ?? null,
-                    'jazzcash_retrieval' => $response['pp_RetreivalReferenceNo'] ?? null,
-                ],
+            $recorder->recordAndProcess(
+                'jazzcash',
+                $eventId,
+                'jazzcash.return',
+                $response,
+                (int) $payment->tenant_id,
+                function () use ($activationService, $payment, $response) {
+                    $fresh = $payment->fresh(['tenant', 'membership', 'invoice']);
+                    if ($fresh?->status === 'paid') {
+                        return;
+                    }
+
+                    $activationService->activate(
+                        $fresh ?? $payment,
+                        renewedBy: 'jazzcash',
+                        payloadMerge: [
+                            'jazzcash_txn_ref'   => $response['pp_TxnRefNo'] ?? null,
+                            'jazzcash_retrieval' => $response['pp_RetreivalReferenceNo'] ?? null,
+                        ],
+                    );
+                },
             );
         } catch (RuntimeException $e) {
             return redirect()->route('tenant.billing')->with('error', $e->getMessage());

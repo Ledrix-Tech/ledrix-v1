@@ -10,21 +10,37 @@ return new class extends Migration
 
     public function up(): void
     {
-        Schema::connection('central')->table('tenant_memberships', function (Blueprint $table) {
-            $table->timestamp('renewal_reminder_7d_sent_at')->nullable()->after('trial_reminder_sent_at');
-            $table->timestamp('renewal_reminder_1d_sent_at')->nullable()->after('renewal_reminder_7d_sent_at');
-            $table->timestamp('renewal_expired_notice_sent_at')->nullable()->after('renewal_reminder_1d_sent_at');
-        });
+        if (! Schema::connection('central')->hasColumn('tenant_memberships', 'renewal_reminder_7d_sent_at')) {
+            Schema::connection('central')->table('tenant_memberships', function (Blueprint $table) {
+                $table->timestamp('renewal_reminder_7d_sent_at')->nullable()->after('trial_reminder_sent_at');
+            });
+        }
+
+        if (! Schema::connection('central')->hasColumn('tenant_memberships', 'renewal_reminder_1d_sent_at')) {
+            Schema::connection('central')->table('tenant_memberships', function (Blueprint $table) {
+                $table->timestamp('renewal_reminder_1d_sent_at')->nullable();
+            });
+        }
+
+        if (! Schema::connection('central')->hasColumn('tenant_memberships', 'renewal_expired_notice_sent_at')) {
+            Schema::connection('central')->table('tenant_memberships', function (Blueprint $table) {
+                $table->timestamp('renewal_expired_notice_sent_at')->nullable();
+            });
+        }
     }
 
     public function down(): void
     {
         Schema::connection('central')->table('tenant_memberships', function (Blueprint $table) {
-            $table->dropColumn([
+            foreach ([
                 'renewal_reminder_7d_sent_at',
                 'renewal_reminder_1d_sent_at',
                 'renewal_expired_notice_sent_at',
-            ]);
+            ] as $col) {
+                if (Schema::connection('central')->hasColumn('tenant_memberships', $col)) {
+                    $table->dropColumn($col);
+                }
+            }
         });
     }
 };

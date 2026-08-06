@@ -22,6 +22,17 @@ class StripeController extends Controller
 {
     public function sendRenewalApproval(Tenant $tenant)
     {
+        if (! $tenant->stripe_customer_id || ! $tenant->stripe_payment_method_id) {
+            return back()->with(
+                'error',
+                'This tenant has no saved Stripe card for off-session renewal. Ask them to renew via Organization Billing (Checkout), or confirm a bank/PayFast payment instead.'
+            );
+        }
+
+        if (! $tenant->plan_id) {
+            return back()->with('error', 'This tenant has no plan assigned.');
+        }
+
         $token = Str::random(40);
 
         $renew = TenantRenewalRequest::create([
@@ -171,6 +182,13 @@ class StripeController extends Controller
 
     public function startCheckout(Request $request, Tenant $company)
     {
+        if (! $company->stripe_customer_id || ! $company->stripe_payment_method_id) {
+            return back()->with(
+                'error',
+                'No saved Stripe card for off-session charge. Use Organization Billing Checkout, or confirm another payment method.'
+            );
+        }
+
         try {
             $this->processRenewal($company, 'super_admin');
         } catch (\Throwable $e) {

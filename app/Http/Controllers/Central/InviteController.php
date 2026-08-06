@@ -3,137 +3,200 @@
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
-use App\Models\Central\SuperAdmin;
+use App\Mail\SuperAdminInviteMail;
 use App\Models\Central\AuditLog;
+use App\Models\Central\SuperAdmin;
+use App\Models\Central\SuperAdminInvite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Throwable;
 
 class InviteController extends Controller
 {
-    // ── Send Invite ────────────────────────────────────────
-    // Only owner can invite new admins
-
     public function sendInvite(Request $request)
     {
-        // Only owner role can invite
-        if (!Auth::guard('super_admin')->user()->isOwner()) {
+        if (! Auth::guard('super_admin')->user()?->isOwner()) {
             abort(403, 'Only the owner can invite new admins.');
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'name'  => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
                 'email',
-                Rule::unique('super_admins', 'email')
-                    ->using('central'),
+                Rule::unique(SuperAdmin::class, 'email'),
             ],
             'role'  => ['required', Rule::in(['admin', 'support'])],
         ]);
 
-        // Generate invite token — expires in 48 hours
-        $token = Str::random(64);
+        // Replace any unused prior invite for this email.
+        SuperAdminInvite::query()
+            ->where('email', $validated['email'])
+            ->whereNull('accepted_at')
+            ->delete();
 
-        Cache::put(
-            "super_admin_invite_{$token}",
-            [
-                'name'       => $request->name,
-                'email'      => $request->email,
-                'role'       => $request->role,
-                'invited_by' => Auth::guard('super_admin')->id(),
-            ],
-            now()->addHours(48)
+        $invite = SuperAdminInvite::issue(
+            $validated,
+            Auth::guard('super_admin')->id(),
         );
 
-        // Send invite email
-        // Mail::to($request->email)->send(new SuperAdminInviteMail($token, $request->name));
+        $acceptUrl = route('super-admin.invite.accept', ['token' => $invite->token]);
 
-        // Log it
+        try {
+            Mail::to($validated['email'])->send(
+                new SuperAdminInviteMail($invite->token, $validated['name'], $validated['role'])
+            );
+            $mailNote = 'Invite email sent.';
+        } catch (Throwable $e) {
+            Log::warning('Super admin invite mail failed', [
+                'email' => $validated['email'],
+                'error' => $e->getMessage(),
+            ]);
+            $mailNote = 'Invite created (email failed). Share this link: ' . $acceptUrl;
+        }
+
         AuditLog::record(
-            action:    'super_admin.invited',
-            actorType: 'super_admin',
-            actorId:   Auth::guard('super_admin')->id(),
-            actorName: Auth::guard('super_admin')->user()->name,
-            context: [
-                'description' => "Invited {$request->email} as {$request->role}",
+            'super_admin.invited',
+            null,
+            'super_admin',
+            Auth::guard('super_admin')->id(),
+            Auth::guard('super_admin')->user()->name,
+            [
+                'subject_type' => 'super_admin_invite',
+                'subject_id'   => $invite->id,
+                'description'  => "Invited {$validated['email']} as {$validated['role']}",
             ]
         );
 
-        return back()->with('success', "Invite sent to {$request->email}");
+        return back()->with('success', $mailNote);
     }
-
-    // ── Show Accept Invite Page ────────────────────────────
 
     public function showAccept(string $token)
     {
-        $invite = Cache::get("super_admin_invite_{$token}");
+        $invite = SuperAdminInvite::query()->where('token', $token)->first();
 
-        if (!$invite) {
+        if (! $invite || ! $invite->isUsable()) {
             abort(404, 'Invite link is invalid or has expired.');
         }
 
-        return view('central.auth.accept-invite', [
+        return view('central.pages.auth.accept-invite', [
             'token'  => $token,
-            'invite' => $invite,
+            'invite' => [
+                'name'  => $invite->name,
+                'email' => $invite->email,
+                'role'  => $invite->role,
+            ],
         ]);
     }
 
-    // ── Accept Invite + Set Password ──────────────────────
-
     public function acceptInvite(Request $request, string $token)
     {
-        $invite = Cache::get("super_admin_invite_{$token}");
-
-        if (!$invite) {
-            abort(404, 'Invite link is invalid or has expired.');
-        }
-
         $request->validate([
             'password' => [
                 'required',
                 'string',
                 'min:8',
                 'confirmed',
-                // Must have uppercase, lowercase, number, special char
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/',
             ],
         ], [
             'password.regex' => 'Password must contain uppercase, lowercase, number and special character.',
         ]);
 
-        // Create the super admin account
-        $admin = SuperAdmin::create([
-            'name'     => $invite['name'],
-            'email'    => $invite['email'],
-            'password' => Hash::make($request->password),
-            'role'     => $invite['role'],
-            'status'   => 'active',
-        ]);
+        try {
+            $admin = DB::connection('central')->transaction(function () use ($request, $token) {
+                $invite = SuperAdminInvite::query()
+                    ->where('token', $token)
+                    ->lockForUpdate()
+                    ->first();
 
-        // Remove invite from cache
-        Cache::forget("super_admin_invite_{$token}");
+                if (! $invite || ! $invite->isUsable()) {
+                    abort(404, 'Invite link is invalid or has expired.');
+                }
 
-        // Log it
+                if (SuperAdmin::query()->where('email', $invite->email)->exists()) {
+                    $invite->markAccepted();
+
+                    return null;
+                }
+
+                $admin = SuperAdmin::query()->create([
+                    'name'     => $invite->name,
+                    'email'    => $invite->email,
+                    'password' => Hash::make($request->password),
+                    'role'     => $invite->role,
+                    'status'   => 'active',
+                ]);
+
+                $invite->markAccepted();
+
+                return $admin;
+            });
+        } catch (HttpException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            Log::error('Super admin invite accept failed', [
+                'token' => $token,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Unable to create your account. Please try again or request a new invite.');
+        }
+
+        if (! $admin) {
+            return redirect()
+                ->route('super-admin.login.get')
+                ->with('error', 'An account with this email already exists. Please sign in.');
+        }
+
         AuditLog::record(
-            action:    'super_admin.registered',
-            actorType: 'super_admin',
-            actorId:   $admin->id,
-            actorName: $admin->name,
-            context: [
+            'super_admin.registered',
+            null,
+            'super_admin',
+            $admin->id,
+            $admin->name,
+            [
                 'description' => "New {$admin->role} registered via invite",
             ]
         );
 
-        // Auto-login after accepting invite
         Auth::guard('super_admin')->login($admin);
 
         return redirect()
-            ->route('super.dashboard')
+            ->route('super-admin.index.get')
             ->with('success', 'Welcome to Ledrix! Your account is ready.');
+    }
+
+    public function revoke(int $id)
+    {
+        abort_unless(Auth::guard('super_admin')->user()?->isOwner(), 403);
+
+        $invite = SuperAdminInvite::query()
+            ->whereNull('accepted_at')
+            ->findOrFail($id);
+
+        $email = $invite->email;
+        $invite->delete();
+
+        AuditLog::record(
+            'super_admin.invite_revoked',
+            null,
+            'super_admin',
+            Auth::guard('super_admin')->id(),
+            Auth::guard('super_admin')->user()->name,
+            [
+                'subject_type' => 'super_admin_invite',
+                'subject_id'   => $id,
+                'description'  => "Revoked invite for {$email}",
+            ]
+        );
+
+        return back()->with('success', 'Invite revoked.');
     }
 }

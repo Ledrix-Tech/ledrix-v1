@@ -9,7 +9,12 @@ echo "==> Ledrix post-deploy"
 
 php artisan down --retry=60 || true
 
+# Primary (tenant CRM) DB
 php artisan migrate --force
+
+# Central (SaaS / Super Admin) DB
+php artisan migrate --database=central --path=database/migrations/central --force
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache

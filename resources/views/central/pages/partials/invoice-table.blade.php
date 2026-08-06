@@ -11,6 +11,7 @@
                     <th>Due</th>
                     <th>Paid</th>
                     <th>Reference</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -39,6 +40,10 @@
                             @else
                                 —
                             @endif
+                        </td>
+                        <td data-label="">
+                            <a href="{{ route('super-admin.tenant.invoice.show', [$invoice->tenant_id, $invoice->id]) }}"
+                                class="btn btn-sm btn-outline-primary">View</a>
                         </td>
                     </tr>
                 @endforeach

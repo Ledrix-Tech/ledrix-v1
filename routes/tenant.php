@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Tenant\AnnouncementController;
 use App\Http\Controllers\Tenant\AuthController;
 use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\CrmAccessController;
@@ -7,8 +8,10 @@ use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\BankTransferBillingController;
 use App\Http\Controllers\Tenant\JazzCashBillingController;
 use App\Http\Controllers\Tenant\PayFastBillingController;
+use App\Http\Controllers\Tenant\PlatformSupportController;
 use App\Http\Controllers\Tenant\RegistrationController;
 use App\Http\Controllers\Tenant\StripeBillingController;
+use App\Http\Controllers\Tenant\TenantReferralController;
 use Illuminate\Support\Facades\Route;
 
 // ── Registration (public) ──────────────────────────────────
@@ -44,8 +47,37 @@ Route::middleware('tenant')->group(function () {
     Route::get('/tenant-profile', [DashboardController::class, 'index'])
         ->name('tenant.dashboard');
 
+    Route::post('/tenant-profile/announcements/{id}/dismiss', [AnnouncementController::class, 'dismiss'])
+        ->name('tenant.announcements.dismiss')
+        ->whereNumber('id');
+
+    Route::get('/tenant-profile/support', [PlatformSupportController::class, 'index'])
+        ->name('tenant.support.index');
+    Route::get('/tenant-profile/support/new', [PlatformSupportController::class, 'create'])
+        ->name('tenant.support.create');
+    Route::post('/tenant-profile/support', [PlatformSupportController::class, 'store'])
+        ->name('tenant.support.store');
+    Route::get('/tenant-profile/support/{id}', [PlatformSupportController::class, 'show'])
+        ->name('tenant.support.show')
+        ->whereNumber('id');
+    Route::post('/tenant-profile/support/{id}/reply', [PlatformSupportController::class, 'reply'])
+        ->name('tenant.support.reply')
+        ->whereNumber('id');
+
     Route::get('/tenant-profile/billing', [BillingController::class, 'index'])
         ->name('tenant.billing');
+
+    Route::get('/tenant-profile/billing/invoices/{invoice}', [\App\Http\Controllers\Tenant\TenantInvoiceController::class, 'show'])
+        ->name('tenant.billing.invoice.show')
+        ->whereNumber('invoice');
+
+    Route::post('/tenant-profile/billing/currency', [BillingController::class, 'updateBillingCurrency'])
+        ->name('tenant.billing.currency');
+
+    Route::get('/tenant-profile/referrals', [TenantReferralController::class, 'index'])
+        ->name('tenant.referrals');
+    Route::post('/tenant-profile/referrals', [TenantReferralController::class, 'issue'])
+        ->name('tenant.referrals.issue');
 
     Route::post('/tenant-profile/billing/stripe/checkout', [StripeBillingController::class, 'checkout'])
         ->name('tenant.billing.stripe.checkout');

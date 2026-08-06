@@ -122,8 +122,8 @@
                                         <label class="mkt-form-label" for="inquiry-type">Inquiry type *</label>
                                         <select id="inquiry-type" name="inquiry_type"
                                             class="form-select mkt-form-control @error('inquiry_type') is-invalid @enderror" required>
-                                            @foreach (['pricing' => 'Pricing & trial', 'sales' => 'Sales inquiry', 'partnership' => 'Partnership', 'support' => 'Technical support', 'general' => 'General inquiry'] as $val => $label)
-                                                <option value="{{ $val }}" @selected(old('inquiry_type', 'pricing') === $val)>{{ $label }}</option>
+                                            @foreach (['demo' => 'Request a demo', 'pricing' => 'Pricing & trial', 'sales' => 'Sales inquiry', 'partnership' => 'Partnership', 'support' => 'Technical support', 'general' => 'General inquiry'] as $val => $label)
+                                                <option value="{{ $val }}" @selected(old('inquiry_type', 'demo') === $val)>{{ $label }}</option>
                                             @endforeach
                                         </select>
                                         @error('inquiry_type')<div class="invalid-feedback">{{ $message }}</div>@enderror

@@ -32,7 +32,7 @@ class SuperDashboardController extends Controller
             ->count();
 
         $pendingSubscriptionPayments = TenantPayment::on('central')
-            ->where('gateway', 'payoneer')
+            ->whereIn('gateway', ['payoneer', 'bank_transfer'])
             ->where('status', 'pending')
             ->count();
 

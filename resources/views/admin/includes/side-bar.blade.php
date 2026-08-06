@@ -106,6 +106,24 @@
                         </a>
                     </li>
                     @endif
+                    <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.billing') ? 'active' : '' }}"
+                            href="{{ route('admin.org.billing') }}">
+                            <i class="bi bi-credit-card"></i><span>Billing</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.support') ? 'active' : '' }}"
+                            href="{{ route('admin.org.support.index') }}">
+                            <i class="bi bi-headset"></i><span>Support</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.referrals') ? 'active' : '' }}"
+                            href="{{ route('admin.org.referrals') }}">
+                            <i class="bi bi-gift"></i><span>Referrals</span>
+                        </a>
+                    </li>
                 @else
                     <li>
                         <a class="crm-nav-link {{ in_array($route, ['admin.assigned-leads-orders.get', 'admin.renewed-orders.get']) ? 'active' : '' }}"

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
 use App\Models\Central\PackagePricing;
+use App\Models\Central\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +31,8 @@ class PricingController extends Controller
             ],
             'monthly_price' => 'required|numeric|min:0',
             'yearly_price' => 'nullable|numeric|min:0',
+            'monthly_price_pkr' => 'nullable|numeric|min:0',
+            'yearly_price_pkr' => 'nullable|numeric|min:0',
             'features_html' => 'nullable|string',
 
             // Limits
@@ -60,6 +63,10 @@ class PricingController extends Controller
                 // Pricing
                 'monthly_price' => $request->monthly_price,
                 'yearly_price' => $request->yearly_price ?: ($request->monthly_price * 12),
+                'monthly_price_pkr' => $request->monthly_price_pkr,
+                'yearly_price_pkr' => $request->yearly_price_pkr ?: (
+                    $request->monthly_price_pkr ? $request->monthly_price_pkr * 12 : null
+                ),
                 'currency' => 'USD',
                 'trial_days' => 14,
 
@@ -94,12 +101,11 @@ class PricingController extends Controller
                 'feature_custom_domain' => $request->boolean('feature_custom_domain'),
                 'feature_white_label' => $request->boolean('feature_white_label'),
 
-                // // Display
-                // 'is_popular' => $request->boolean('is_popular'),
-                // 'is_public' => $request->boolean('is_public', true),
-                // 'sort_order' => $request->sort_order ?? 0,
-                // 'badge_text' => $request->badge_text,
-                // 'status' => $request->status ?? 'active',
+                'is_popular' => $request->boolean('is_popular'),
+                'is_public' => $request->boolean('is_public', true),
+                'sort_order' => $request->integer('sort_order', 0),
+                'badge_text' => $request->badge_text,
+                'status' => $request->status ?? 'active',
             ]);
 
             DB::connection('central')->commit();
@@ -140,6 +146,8 @@ class PricingController extends Controller
 
                 'monthly_price' => 'required|numeric|min:0',
                 'yearly_price' => 'nullable|numeric|min:0',
+                'monthly_price_pkr' => 'nullable|numeric|min:0',
+                'yearly_price_pkr' => 'nullable|numeric|min:0',
                 'features_html' => 'nullable|string',
 
                 // Limits
@@ -175,6 +183,10 @@ class PricingController extends Controller
                 // Pricing
                 'monthly_price' => $request->monthly_price,
                 'yearly_price' => $request->yearly_price ?: ($request->monthly_price * 12),
+                'monthly_price_pkr' => $request->monthly_price_pkr,
+                'yearly_price_pkr' => $request->yearly_price_pkr ?: (
+                    $request->filled('monthly_price_pkr') ? $request->monthly_price_pkr * 12 : null
+                ),
                 'currency' => 'USD',
                 'trial_days' => $request->trial_days ?? 14,
 
@@ -247,5 +259,24 @@ class PricingController extends Controller
                 ->withInput()
                 ->with('error', 'Something went wrong while updating the package.');
         }
+    }
+
+    public function destroy(int $id)
+    {
+        $package = PackagePricing::query()->findOrFail($id);
+
+        $inUse = Tenant::query()->where('plan_id', $package->id)->exists();
+        if ($inUse) {
+            $package->update(['status' => 'inactive', 'is_public' => false]);
+
+            return back()->with(
+                'success',
+                'Package is assigned to tenants — archived (inactive) instead of deleted.'
+            );
+        }
+
+        $package->delete();
+
+        return back()->with('success', 'Package deleted.');
     }
 }

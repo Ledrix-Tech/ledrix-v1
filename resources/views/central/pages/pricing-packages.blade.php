@@ -19,7 +19,15 @@
             <div class="col-lg-6">
                 <div class="sa-card sa-package-card">
                     <div class="sa-card-header">
-                        <h4>{{ $package->name }}</h4>
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <h4 class="mb-0">{{ $package->name }}</h4>
+                            <form method="POST" action="{{ route('super-admin.pricing-packages.destroy', $package->id) }}"
+                                onsubmit="return confirm('Delete or archive this package?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </div>
                         @if ($package->is_popular)
                             <span class="badge bg-primary">Popular</span>
                         @endif
@@ -45,14 +53,26 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Monthly Price ($)</label>
+                                    <label class="form-label">Monthly Price (USD)</label>
                                     <input type="number" step="0.01" name="monthly_price" class="form-control"
                                         value="{{ old('monthly_price', $package->monthly_price) }}" required>
+                                    <div class="form-text">Stripe / international</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Yearly Price ($)</label>
+                                    <label class="form-label">Yearly Price (USD)</label>
                                     <input type="number" step="0.01" name="yearly_price" class="form-control"
                                         value="{{ old('yearly_price', $package->yearly_price) }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Monthly Price (PKR)</label>
+                                    <input type="number" step="0.01" name="monthly_price_pkr" class="form-control"
+                                        value="{{ old('monthly_price_pkr', $package->monthly_price_pkr) }}">
+                                    <div class="form-text">Meezan / PayFast (Pakistan)</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Yearly Price (PKR)</label>
+                                    <input type="number" step="0.01" name="yearly_price_pkr" class="form-control"
+                                        value="{{ old('yearly_price_pkr', $package->yearly_price_pkr) }}">
                                 </div>
                             </div>
 
@@ -202,12 +222,20 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Monthly Price ($)</label>
+                                <label class="form-label">Monthly Price (USD)</label>
                                 <input type="number" step="0.01" name="monthly_price" class="form-control" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Yearly Price ($)</label>
+                                <label class="form-label">Yearly Price (USD)</label>
                                 <input type="number" step="0.01" name="yearly_price" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Monthly Price (PKR)</label>
+                                <input type="number" step="0.01" name="monthly_price_pkr" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Yearly Price (PKR)</label>
+                                <input type="number" step="0.01" name="yearly_price_pkr" class="form-control">
                             </div>
                         </div>
 

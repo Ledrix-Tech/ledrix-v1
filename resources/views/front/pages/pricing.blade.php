@@ -130,7 +130,7 @@
                                         @endif
 
                                         <div class="pricing-card-cta">
-                                            <a href="{{ route('tenant.register.form', $package->slug) }}"
+                                            <a href="{{ route('tenant.register.form', array_filter(['slug' => $package->slug, 'ref' => request('ref')])) }}"
                                                 class="btn w-100 {{ $package->is_popular ? 'btn-primary pricing-btn' : 'pricing-btn pricing-btn-outline' }}">
                                                 Start {{ $package->trial_days ?: $maxTrialDays }}-day free trial
                                             </a>
@@ -215,7 +215,7 @@
                     <h2>Ready to launch your CRM workspace?</h2>
                     <p>Start your free trial in minutes — setup, verify email, and go live.</p>
                     @php $featured = $packages->firstWhere('is_popular', true) ?? $packages->first(); @endphp
-                    <a href="{{ route('tenant.register.form', $featured->slug) }}" class="btn btn-light btn-lg fw-bold px-4">
+                    <a href="{{ route('tenant.register.form', array_filter(['slug' => $featured->slug, 'ref' => request('ref')])) }}" class="btn btn-light btn-lg fw-bold px-4">
                         Start {{ $featured->trial_days ?: $maxTrialDays }}-day free trial
                     </a>
                 </div>

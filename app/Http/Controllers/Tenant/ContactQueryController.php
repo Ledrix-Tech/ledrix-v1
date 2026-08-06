@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Central\Contact;
+use App\Models\Central\DemoRequest;
+use App\Support\PlatformOpsNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +21,7 @@ class ContactQueryController extends Controller
                 'email'         => 'required|email:rfc,dns|max:255',
                 'phone'         => 'nullable|string|max:30',
                 'company_size'  => 'nullable|in:1-10,11-50,51-200,200+',
-                'inquiry_type'  => 'required|in:pricing,sales,partnership,support,general',
+                'inquiry_type'  => 'required|in:demo,pricing,sales,partnership,support,general',
                 'message'       => 'required|string|max:5000',
             ],
             [
@@ -45,7 +47,30 @@ class ContactQueryController extends Controller
                 'status'        => 'new',
             ]);
 
+            if ($validated['inquiry_type'] === 'demo') {
+                DemoRequest::query()->updateOrCreate(
+                    ['email' => $validated['email']],
+                    [
+                        'name'        => $validated['name'],
+                        'company'     => $validated['company'] ?? null,
+                        'description' => $validated['message'],
+                        'status'      => 'pending',
+                    ]
+                );
+            }
+
             DB::commit();
+
+            PlatformOpsNotifier::alert(
+                'contact_query',
+                'New contact inquiry from ' . $validated['name'],
+                [
+                    'name'         => $validated['name'],
+                    'email'        => $validated['email'],
+                    'inquiry_type' => $validated['inquiry_type'],
+                    'url'          => route('super-admin.contact-queries.get'),
+                ]
+            );
 
             return back()->with(
                 'success',

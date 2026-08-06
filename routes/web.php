@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Tenant\ContactQueryController;
+use App\Http\Controllers\Central\DemoRequestController;
 use App\Http\Controllers\Central\StripeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FrontViews\ViewsController as FrontViewsController;
@@ -28,6 +29,9 @@ Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
 
 Route::post('/contact', [ContactQueryController::class, 'storeContactQuery'])
     ->name('contact.store');
+
+Route::post('/request-demo', [DemoRequestController::class, 'store'])
+    ->name('demo.store');
 
 Route::get('/renew/approve/{token}', [StripeController::class, 'approveRenewal'])
     ->name('super-renew.approve');

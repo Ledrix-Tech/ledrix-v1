@@ -28,6 +28,7 @@ class RegisterTenantRequest extends FormRequest
             'billing_phone'   => ['nullable', 'string', 'max:50'],
             'billing_address' => ['required', 'string', 'max:500'],
             'billing_cycle'   => ['nullable', Rule::in(['monthly', 'yearly'])],
+            'referral_code'   => ['nullable', 'string', 'max:20'],
         ];
     }
 

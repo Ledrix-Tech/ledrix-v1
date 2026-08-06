@@ -65,11 +65,23 @@ class AdminAuthController extends Controller
                 TenantContext::set($admin->tenant_id);
 
                 $tenant = Tenant::query()->find($admin->tenant_id);
-                if ($tenant && ! app(SubscriptionAccessService::class)->canUseCrm($tenant)) {
+                $access = app(SubscriptionAccessService::class);
+
+                if ($tenant && ! $access->canUseCrm($tenant)) {
+                    // Keep admin session so they can renew inside Admin → Billing.
+                    if (($admin->role ?? null) === 'admin' && $access->canAccessOrgBilling($tenant)) {
+                        return redirect()
+                            ->route('admin.org.billing')
+                            ->with('error', 'Your subscription is not active. Renew below to restore CRM access.');
+                    }
+
                     Auth::guard('admin')->logout();
                     session()->forget(['tenant_id', 'role']);
 
-                    return back()->with('error', 'Your subscription is not active. Please sign in via your organization portal to renew.');
+                    return back()->with(
+                        'error',
+                        'Your subscription is not active. Please renew via your organization portal, or contact support.'
+                    );
                 }
             }
 
@@ -116,8 +128,9 @@ class AdminAuthController extends Controller
 
         RateLimiter::hit($throttleKey, 300);
 
-        $admin  = Admin::where('email', $request->email)->first();
-        $seller = Seller::where('email', $request->email)->first();
+        // Forgot/reset runs without an authenticated tenant context — never apply BelongsToTenant scope.
+        $admin  = Admin::withoutGlobalScopes()->where('email', $request->email)->first();
+        $seller = Seller::withoutGlobalScopes()->where('email', $request->email)->first();
 
         if (! $admin && ! $seller) {
             return back()->with('success', 'If that email exists in our system, a reset link has been sent.');
@@ -183,15 +196,14 @@ class AdminAuthController extends Controller
             return back()->with('error', 'Invalid or expired password reset token.');
         }
 
-        // Update password in the right table
-        if (Admin::where('email', $request->email)->exists()) {
-            Admin::where('email', $request->email)->update([
-                'password' => Hash::make($request->password),
-            ]);
-        } elseif (Seller::where('email', $request->email)->exists()) {
-            Seller::where('email', $request->email)->update([
-                'password' => Hash::make($request->password),
-            ]);
+        // Update password in the right table (unscoped — guest reset has no tenant session).
+        $admin = Admin::withoutGlobalScopes()->where('email', $request->email)->first();
+        $seller = Seller::withoutGlobalScopes()->where('email', $request->email)->first();
+
+        if ($admin) {
+            $admin->forceFill(['password' => Hash::make($request->password)])->save();
+        } elseif ($seller) {
+            $seller->forceFill(['password' => Hash::make($request->password)])->save();
         } else {
             return back()->with('error', 'Account not found.');
         }

@@ -117,7 +117,7 @@
     <div class="billing-report-form mt-4 pt-3 border-top">
         <h6 class="fw-bold mb-2"><i class="bi bi-receipt me-1"></i> Step 2 — Submit bank transaction ID</h6>
         <p class="small text-muted mb-3">Copy the transaction or receipt ID from your bank app / SMS after payment.</p>
-        <form method="POST" action="{{ route('tenant.billing.bank-transfer.report', $payment) }}">
+        <form method="POST" action="{{ org_route('billing.bank-transfer.report', $payment) }}">
             @csrf
             <div class="mb-3">
                 <label class="form-label small fw-semibold" for="bank_txn_id_{{ $payment->id }}">Bank transaction ID *</label>

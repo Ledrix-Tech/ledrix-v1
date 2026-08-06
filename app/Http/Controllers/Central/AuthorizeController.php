@@ -76,6 +76,14 @@ class AuthorizeController extends Controller
         // Clear rate limiter on success
         RateLimiter::clear($this->throttleKey($request));
 
+        if ($admin->two_factor_secret) {
+            Auth::guard('super_admin')->logout();
+            $request->session()->put('sa_2fa_pending_id', $admin->id);
+            $request->session()->put('sa_2fa_remember', $remember);
+
+            return redirect()->route('super-admin.2fa.challenge');
+        }
+
         // Regenerate session to prevent fixation
         $request->session()->regenerate();
 
@@ -101,14 +109,14 @@ class AuthorizeController extends Controller
             'email' => 'required|email',
         ]);
 
-        // Check if email exists in admins or sellers
-        $admin  = SuperAdmin::where('email', $request->email)->first();
-        if (!$admin) {
-            return back()->with('error', 'Email not found in our records.');
+        $admin = SuperAdmin::query()->where('email', $request->email)->first();
+        if (! $admin) {
+            // Avoid email enumeration in production responses.
+            return back()->with('success', 'If that email exists, a reset code has been sent.');
         }
 
-        // Prevent spam: existing token in last 15 minutes
-        $existingToken = DB::table('password_reset_tokens')
+        $existingToken = DB::connection('central')
+            ->table('super_admin_password_resets')
             ->where('email', $request->email)
             ->where('created_at', '>=', Carbon::now()->subMinutes(15))
             ->first();
@@ -117,53 +125,71 @@ class AuthorizeController extends Controller
             return back()->with('error', 'A password reset token has already been sent in the last 15 minutes.');
         }
 
-        $token = mt_rand(100000, 999999);
+        $plainToken = (string) random_int(100000, 999999);
 
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-
-        DB::table('password_reset_tokens')->insert([
+        DB::connection('central')->table('super_admin_password_resets')->where('email', $request->email)->delete();
+        DB::connection('central')->table('super_admin_password_resets')->insert([
             'email'      => $request->email,
-            'token'      => $token,
+            'token'      => Hash::make($plainToken),
             'created_at' => Carbon::now(),
         ]);
 
-        // Send email
-        Mail::send('emails.super-admin-password', ['token' => $token], function ($message) use ($request) {
-            $message->to($request->email);
-            $message->subject('Reset Your Password');
-        });
+        try {
+            Mail::send('emails.super-admin-password', ['token' => $plainToken], function ($message) use ($request) {
+                $message->to($request->email);
+                $message->subject('Reset Your Password');
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Super admin password reset mail failed', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+            ]);
 
-        return back()->with('success', 'Password reset code sent! Please check your email.');
+            return back()->with('error', 'Unable to send reset email right now. Please try again later.');
+        }
+
+        return back()->with('success', 'If that email exists, a reset code has been sent.');
     }
 
     public function adminResetPost(Request $request)
     {
         $request->validate([
             'email'     => 'required|email',
-            'password'  => 'required|min:8',
+            'password'  => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/',
+            ],
             'cpassword' => 'required|same:password',
-            'token'     => 'required'
+            'token'     => 'required',
+        ], [
+            'password.regex' => 'Password must contain uppercase, lowercase, number and special character.',
         ]);
 
-        $resetRequest = DB::table('password_reset_tokens')
+        $resetRequest = DB::connection('central')
+            ->table('super_admin_password_resets')
             ->where('email', $request->email)
-            ->where('token', $request->token)
-            ->where('created_at', '>=', Carbon::now()->subMinutes(30)) // 30 min expiry
+            ->where('created_at', '>=', Carbon::now()->subMinutes(30))
             ->first();
 
-        if (!$resetRequest) {
+        if (! $resetRequest || ! Hash::check((string) $request->token, (string) $resetRequest->token)) {
             return back()->with('error', 'Invalid or expired password reset token.');
         }
 
-        // Update password in the right table
-        if (SuperAdmin::where('email', $request->email)->exists()) {
-            SuperAdmin::where('email', $request->email)->update([
-                'password' => Hash::make($request->password)
-            ]);
-        } else {
+        $admin = SuperAdmin::query()->where('email', $request->email)->first();
+        if (! $admin) {
             return back()->with('error', 'Account not found.');
         }
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        $admin->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        DB::connection('central')
+            ->table('super_admin_password_resets')
+            ->where('email', $request->email)
+            ->delete();
 
         return redirect()->route('super-admin.login.get')->with('success', 'Password updated successfully!');
     }

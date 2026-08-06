@@ -20,7 +20,13 @@ class SubscriptionPaymentController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return view('central.pages.subscription-payments', compact('payments'));
+        $automatedPayments = TenantPayment::with(['tenant:id,name,email,slug', 'plan:id,name', 'invoice'])
+            ->whereIn('gateway', ['stripe', 'payfast'])
+            ->orderByDesc('updated_at')
+            ->limit(20)
+            ->get();
+
+        return view('central.pages.subscription-payments', compact('payments', 'automatedPayments'));
     }
 
     public function confirm(Request $request, int $paymentId, ConfirmManualSubscriptionService $confirmService)

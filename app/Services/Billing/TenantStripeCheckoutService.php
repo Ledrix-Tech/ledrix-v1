@@ -12,11 +12,15 @@ class TenantStripeCheckoutService
 {
     public function isConfigured(): bool
     {
-        return (bool) config('services.stripe.secret');
+        return app(PlatformBillingSettingsService::class)->isReady('stripe');
     }
 
-    public function createCheckoutUrl(Tenant $tenant, TenantPayment $payment): string
-    {
+    public function createCheckoutUrl(
+        Tenant $tenant,
+        TenantPayment $payment,
+        ?string $successUrl = null,
+        ?string $cancelUrl = null,
+    ): string {
         if (! $this->isConfigured()) {
             throw new RuntimeException('Stripe is not configured.');
         }
@@ -51,8 +55,8 @@ class TenantStripeCheckoutService
                 'tenant_payment_id' => (string) $payment->id,
                 'reference'         => $payment->transaction_id,
             ],
-            'success_url' => route('tenant.billing.stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url'  => route('tenant.billing') . '?cancelled=1',
+            'success_url' => $successUrl ?: (route('tenant.billing.stripe.success') . '?session_id={CHECKOUT_SESSION_ID}'),
+            'cancel_url'  => $cancelUrl ?: (route('tenant.billing') . '?cancelled=1'),
         ]);
 
         $payment->update([

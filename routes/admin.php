@@ -13,6 +13,13 @@ use App\Http\Controllers\Admin\AdminBrandsController;
 use App\Http\Controllers\Admin\AdminSellerController;
 use App\Http\Controllers\Admin\UpworkController;
 use App\Http\Controllers\API\Client\BrandConfigController;
+use App\Http\Controllers\Tenant\BankTransferBillingController;
+use App\Http\Controllers\Tenant\BillingController;
+use App\Http\Controllers\Tenant\PayFastBillingController;
+use App\Http\Controllers\Tenant\PlatformSupportController;
+use App\Http\Controllers\Tenant\StripeBillingController;
+use App\Http\Controllers\Tenant\TenantInvoiceController;
+use App\Http\Controllers\Tenant\TenantReferralController;
 
 Route::group(['prefix' => 'admin'], function () {
     Route::get('/login', [AdminAuthController::class, 'adminLoginPage'])->name('admin.login.get');
@@ -26,11 +33,9 @@ Route::group(['prefix' => 'admin'], function () {
     Route::group(['middleware' => ['admin', 'finance.restrict', 'crm.workspace', 'tenant.feature:ppc_module']], function () {
         Route::get('/dashboard', [ViewsController::class, 'adminDashboard'])->name('admin.index.get');
 
-        // Finance + admin: brand payment reports
-        Route::middleware('tenant.feature:stripe|paypal')->group(function () {
-            Route::get('/brand-payments', [AdminBrandsController::class, 'adminBrandPayments'])->name('admin.brand-payments.get');
-            Route::get('/brand-payouts', [AdminBrandsController::class, 'adminBrandPayouts'])->name('admin.brand-payouts.get');
-        });
+        // Finance home — not gated by stripe|paypal so finance login never 403s.
+        Route::get('/brand-payments', [AdminBrandsController::class, 'adminBrandPayments'])->name('admin.brand-payments.get');
+        Route::get('/brand-payouts', [AdminBrandsController::class, 'adminBrandPayouts'])->name('admin.brand-payouts.get');
 
         // Administrators only — not finance, not sellers
         Route::middleware('admin.only')->group(function () {
@@ -93,6 +98,30 @@ Route::group(['prefix' => 'admin'], function () {
         Route::middleware('tenant.feature:support_tickets')->group(function () {
             Route::get('/order/{order?}/tickets', [ExportController::class, 'adminOrderTickets'])->name('admin.order-tickets.get');
             Route::get('/order/ticket/{id?}/details', [ExportController::class, 'getTicketDetails'])->name('admin.tickets.details');
+        });
+    });
+
+    // Organization portal — must NOT sit under tenant.feature:ppc_module.
+    // Expired admins renew here; plan feature flags must not 403 billing.
+    Route::group(['middleware' => ['admin', 'finance.restrict', 'crm.workspace', 'admin.only']], function () {
+        Route::prefix('organization')->name('admin.org.')->group(function () {
+            Route::get('/billing', [BillingController::class, 'index'])->name('billing');
+            Route::get('/billing/invoices/{invoice}', [TenantInvoiceController::class, 'show'])->name('billing.invoice.show')->whereNumber('invoice');
+            Route::post('/billing/currency', [BillingController::class, 'updateBillingCurrency'])->name('billing.currency');
+            Route::post('/billing/stripe/checkout', [StripeBillingController::class, 'checkout'])->name('billing.stripe.checkout');
+            Route::post('/billing/payfast/checkout', [PayFastBillingController::class, 'checkout'])->name('billing.payfast.checkout');
+            Route::post('/billing/bank-transfer/checkout', [BankTransferBillingController::class, 'checkout'])->name('billing.bank-transfer.checkout');
+            Route::get('/billing/bank-transfer/{payment}', [BankTransferBillingController::class, 'show'])->name('billing.bank-transfer.show');
+            Route::post('/billing/bank-transfer/{payment}/report', [BankTransferBillingController::class, 'report'])->name('billing.bank-transfer.report');
+
+            Route::get('/support', [PlatformSupportController::class, 'index'])->name('support.index');
+            Route::get('/support/new', [PlatformSupportController::class, 'create'])->name('support.create');
+            Route::post('/support', [PlatformSupportController::class, 'store'])->name('support.store');
+            Route::get('/support/{id}', [PlatformSupportController::class, 'show'])->name('support.show')->whereNumber('id');
+            Route::post('/support/{id}/reply', [PlatformSupportController::class, 'reply'])->name('support.reply')->whereNumber('id');
+
+            Route::get('/referrals', [TenantReferralController::class, 'index'])->name('referrals');
+            Route::post('/referrals', [TenantReferralController::class, 'issue'])->name('referrals.issue');
         });
     });
 });

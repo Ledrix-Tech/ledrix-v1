@@ -22,9 +22,13 @@
             <td><strong>Plan</strong></td>
             <td>{{ $invoice->plan_name ?? $tenant->plan?->name ?? 'Ledrix Plan' }}</td>
         </tr>
+        @php
+            $dueCurrency = strtoupper($invoice->currency ?? $payment->currency ?? 'USD');
+            $dueDecimals = $dueCurrency === 'USD' ? 2 : 0;
+        @endphp
         <tr>
             <td><strong>Amount</strong></td>
-            <td>PKR {{ number_format((float) $payment->amount, 0) }}</td>
+            <td>{{ $dueCurrency }} {{ number_format((float) ($invoice->total_amount ?? $payment->amount), $dueDecimals) }}</td>
         </tr>
         <tr>
             <td><strong>Payment reference</strong></td>
@@ -47,5 +51,6 @@
         </tr>
     </table>
 
-    <a href="{{ route('tenant.billing') }}" class="email-btn">Open Billing Page</a>
+    <a href="{{ route('tenant.billing.invoice.show', $invoice->id) }}" class="email-btn">View invoice</a>
+    <p style="margin-top:16px;"><a href="{{ route('tenant.billing') }}">Or open billing</a></p>
 @endsection

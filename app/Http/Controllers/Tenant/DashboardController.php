@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\Central\SystemAnnouncement;
 use App\Models\Central\TenantInvoice;
 use App\Services\Tenant\SubscriptionAccessService;
 use App\Services\Tenant\TenantUsageService;
@@ -41,6 +42,14 @@ class DashboardController extends Controller
             'orders'        => $plan?->max_orders,
         ];
 
+        $announcements = SystemAnnouncement::query()
+            ->visible()
+            ->forPlan((string) ($plan?->slug ?? ''))
+            ->latest()
+            ->get()
+            ->filter(fn (SystemAnnouncement $a) => $a->isVisibleToTenant($tenant))
+            ->values();
+
         return view('front.pages.tenant.dashboard', compact(
             'tenant',
             'membership',
@@ -52,6 +61,7 @@ class DashboardController extends Controller
             'expiresSoon',
             'daysUntilRenewal',
             'invoices',
+            'announcements',
         ));
     }
 }

@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'super-admin' => \App\Http\Middleware\Central\SuperAdminMiddleware::class,
             'tenant' => \App\Http\Middleware\TenantMiddleware::class,
             'tenant.context' => \App\Http\Middleware\SetTenantContext::class,
+            'tenant.api' => \App\Http\Middleware\AuthenticateTenantApiToken::class,
         ]);
 
         // Global middleware

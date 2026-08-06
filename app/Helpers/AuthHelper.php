@@ -108,3 +108,40 @@ if (!function_exists('isProjectManager')) {
         return authRole() === 'project_manager';
     }
 }
+
+if (! function_exists('org_route')) {
+    /**
+     * Named route for organization portal pages (tenant-profile or admin CRM).
+     */
+    function org_route(string $name, mixed $parameters = [], bool $absolute = true): string
+    {
+        $admin = request()->routeIs('admin.org.*')
+            || (($GLOBALS['__organization_portal'] ?? null) === 'admin')
+            || (view()->shared('organizationPortal') === 'admin');
+
+        $map = [
+            'dashboard' => $admin ? 'admin.index.get' : 'tenant.dashboard',
+            'billing' => $admin ? 'admin.org.billing' : 'tenant.billing',
+            'billing.currency' => $admin ? 'admin.org.billing.currency' : 'tenant.billing.currency',
+            'billing.stripe.checkout' => $admin ? 'admin.org.billing.stripe.checkout' : 'tenant.billing.stripe.checkout',
+            'billing.payfast.checkout' => $admin ? 'admin.org.billing.payfast.checkout' : 'tenant.billing.payfast.checkout',
+            'billing.bank-transfer.checkout' => $admin ? 'admin.org.billing.bank-transfer.checkout' : 'tenant.billing.bank-transfer.checkout',
+            'billing.bank-transfer.show' => $admin ? 'admin.org.billing.bank-transfer.show' : 'tenant.billing.bank-transfer.show',
+            'billing.bank-transfer.report' => $admin ? 'admin.org.billing.bank-transfer.report' : 'tenant.billing.bank-transfer.report',
+            'billing.invoice.show' => $admin ? 'admin.org.billing.invoice.show' : 'tenant.billing.invoice.show',
+            'support.index' => $admin ? 'admin.org.support.index' : 'tenant.support.index',
+            'support.create' => $admin ? 'admin.org.support.create' : 'tenant.support.create',
+            'support.store' => $admin ? 'admin.org.support.store' : 'tenant.support.store',
+            'support.show' => $admin ? 'admin.org.support.show' : 'tenant.support.show',
+            'support.reply' => $admin ? 'admin.org.support.reply' : 'tenant.support.reply',
+            'referrals' => $admin ? 'admin.org.referrals' : 'tenant.referrals',
+            'referrals.issue' => $admin ? 'admin.org.referrals.issue' : 'tenant.referrals.issue',
+        ];
+
+        if (! isset($map[$name])) {
+            throw new InvalidArgumentException("Unknown organization route [{$name}]");
+        }
+
+        return route($map[$name], $parameters, $absolute);
+    }
+}

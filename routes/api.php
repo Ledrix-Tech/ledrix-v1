@@ -7,6 +7,8 @@ use App\Http\Controllers\API\Client\ApiDataController;
 use App\Http\Controllers\API\Client\BrandConfigController;
 use App\Http\Controllers\Api\Client\ClientTicketController;
 use App\Http\Controllers\API\Client\LeadsController as ClientLeadsController;
+use App\Http\Controllers\Central\LeadsController as PlatformLeadsController;
+use App\Http\Controllers\Central\PlatformStripeWebhookController;
 use App\Http\Controllers\Compliances\RefundWebhookController;
 
 use App\Http\Controllers\Seller\PayPalPaymentController;
@@ -19,6 +21,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/crm-lead-post', [BrandingController::class, 'storeLead'])
     ->name('crm.leads.post');
+
+Route::post('/webhooks/platform/stripe', PlatformStripeWebhookController::class)
+    ->name('platform.stripe.webhook');
+
+Route::middleware(['throttle:60,1', 'tenant.api'])->prefix('v1')->group(function () {
+    Route::get('/company/check', [PlatformLeadsController::class, 'checkCompanyData'])
+        ->name('api.v1.company.check');
+    Route::post('/leads/classify', [PlatformLeadsController::class, 'classifyLead'])
+        ->middleware('tenant.api:leads:classify')
+        ->name('api.v1.leads.classify');
+});
 
 Route::post('/crm-order-post', [BrandingController::class, 'directOrder'])
     ->name('crm.order.post');

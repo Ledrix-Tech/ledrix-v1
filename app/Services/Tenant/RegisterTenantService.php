@@ -5,6 +5,7 @@ namespace App\Services\Tenant;
 use App\Mail\TenantVerifyEmail;
 use App\Models\Central\AuditLog;
 use App\Models\Central\PackagePricing;
+use App\Models\Central\Referral;
 use App\Models\Central\Tenant;
 use App\Models\Central\TenantEmailVerification;
 use App\Models\Central\TenantMembership;
@@ -36,9 +37,9 @@ class RegisterTenantService
             $billingCycle = $data['billing_cycle'] ?? 'monthly';
             $trialDays = (int) $package->trial_days;
             $trialEndsAt = now()->addDays($trialDays);
-            $amount = $billingCycle === 'yearly'
-                ? (float) $package->yearly_price
-                : (float) $package->monthly_price;
+            $billingCurrency = \App\Services\Billing\TenantBillingRegion::currencyFromCountry($data['country'] ?? null);
+            $amount = app(\App\Services\Billing\SubscriptionPricingService::class)
+                ->resolveAmount($package, $billingCycle, $billingCurrency);
 
             $tenant = Tenant::create([
                 'plan_id'         => $package->id,
@@ -54,6 +55,7 @@ class RegisterTenantService
                 'billing_email'   => $data['billing_email'],
                 'billing_phone'   => $data['billing_phone'] ?? null,
                 'billing_address' => $data['billing_address'],
+                'preferred_billing_currency' => $billingCurrency,
                 'trial_used'      => true,
                 'trial_ends_at'   => $trialEndsAt,
                 'status'          => 'inactive',
@@ -69,7 +71,7 @@ class RegisterTenantService
                 'plan_id'      => $package->id,
                 'billing_cycle'=> $billingCycle,
                 'amount'       => $amount,
-                'currency'     => $package->currency ?? 'USD',
+                'currency'     => $billingCurrency,
                 'api_key'      => $this->uniqueApiKey(),
                 'start_date'   => now()->toDateString(),
                 'end_date'     => $trialEndsAt->toDateString(),
@@ -93,6 +95,21 @@ class RegisterTenantService
                 email: $tenant->email,
             );
 
+            $referralCode = isset($data['referral_code']) ? strtoupper(trim((string) $data['referral_code'])) : '';
+            if ($referralCode !== '') {
+                $referral = Referral::query()
+                    ->where('referral_code', $referralCode)
+                    ->where('status', 'pending')
+                    ->where(function ($q) {
+                        $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                    })
+                    ->first();
+
+                if ($referral && (int) $referral->referrer_tenant_id !== (int) $tenant->id) {
+                    $referral->convert($tenant->id);
+                }
+            }
+
             AuditLog::record(
                 action: 'tenant.registered',
                 tenantId: $tenant->id,
@@ -107,6 +124,7 @@ class RegisterTenantService
                         'plan_slug'     => $package->slug,
                         'billing_cycle' => $billingCycle,
                         'trial_ends_at' => $trialEndsAt->toDateTimeString(),
+                        'referral_code' => $referralCode !== '' ? $referralCode : null,
                     ],
                 ]
             );

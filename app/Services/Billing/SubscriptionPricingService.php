@@ -72,6 +72,11 @@ class SubscriptionPricingService
     public function bankTransferConfigured(string $currency): bool
     {
         $currency = strtolower($currency);
+
+        if ($currency === 'pkr') {
+            return app(PlatformBillingSettingsService::class)->isReady('meezan');
+        }
+
         $bank = config("services.bank_transfer.{$currency}", []);
 
         return ! empty($bank['bank_name'])

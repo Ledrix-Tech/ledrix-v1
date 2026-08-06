@@ -12,11 +12,7 @@ class PayFastService
 {
     public function isConfigured(): bool
     {
-        return (bool) (
-            config('services.payfast.merchant_id')
-            && config('services.payfast.secured_key')
-            && config('services.payfast.checkout_url')
-        );
+        return app(PlatformBillingSettingsService::class)->isReady('payfast');
     }
 
     public function getAccessToken(): ?string
@@ -47,8 +43,12 @@ class PayFastService
     /**
      * @return array<string, mixed>
      */
-    public function buildHostedCheckoutFields(Tenant $tenant, TenantPayment $payment, string $accessToken): array
-    {
+    public function buildHostedCheckoutFields(
+        Tenant $tenant,
+        TenantPayment $payment,
+        string $accessToken,
+        ?string $failUrl = null,
+    ): array {
         $merchantId = config('services.payfast.merchant_id');
         $merchantName = config('services.payfast.merchant_name', config('app.name', 'Ledrix'));
         $amount = number_format((float) $payment->amount, 2, '.', '');
@@ -57,7 +57,7 @@ class PayFastService
         $signature = md5("{$merchantId}:{$merchantName}:{$amount}:{$orderId}");
 
         $successUrl = route('tenant.billing.payfast.success');
-        $failUrl = route('tenant.billing') . '?cancelled=1';
+        $failUrl = $failUrl ?: (route('tenant.billing') . '?cancelled=1');
         $backendCallback = 'signature=' . $signature . '&order_id=' . $orderId;
 
         return [

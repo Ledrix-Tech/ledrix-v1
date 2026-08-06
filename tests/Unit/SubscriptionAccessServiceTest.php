@@ -68,6 +68,35 @@ class SubscriptionAccessServiceTest extends TestCase
         }
     }
 
+    public function test_can_access_org_billing_when_crm_is_locked_by_expiry(): void
+    {
+        $membership = $this->membershipStub('expired', now()->subDays(3));
+        $tenant = $this->tenantStub($membership, onTrial: false);
+
+        $this->assertFalse($this->service->canUseCrm($tenant));
+        $this->assertTrue($this->service->canAccessOrgBilling($tenant));
+    }
+
+    public function test_cannot_access_org_billing_when_suspended(): void
+    {
+        $membership = $this->membershipStub('expired', now()->subDays(3));
+
+        $builder = Mockery::mock(Builder::class);
+        $builder->shouldReceive('first')->andReturn($membership);
+
+        $relation = Mockery::mock(HasMany::class);
+        $relation->shouldReceive('latest')->with('start_date')->andReturn($builder);
+
+        $tenant = Mockery::mock(Tenant::class)->makePartial();
+        $tenant->shouldReceive('isSuspended')->andReturn(true);
+        $tenant->shouldReceive('isCancelled')->andReturn(false);
+        $tenant->shouldReceive('isEmailVerified')->andReturn(true);
+        $tenant->shouldReceive('isOnTrial')->andReturn(false);
+        $tenant->shouldReceive('memberships')->andReturn($relation);
+
+        $this->assertFalse($this->service->canAccessOrgBilling($tenant));
+    }
+
     private function tenantStub(TenantMembership $membership, bool $onTrial): Tenant
     {
         $builder = Mockery::mock(Builder::class);

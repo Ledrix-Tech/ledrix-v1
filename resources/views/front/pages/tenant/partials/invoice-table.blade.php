@@ -9,6 +9,7 @@
                     <th>Issued</th>
                     <th>Due</th>
                     <th>Reference</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -36,6 +37,9 @@
                             @else
                                 —
                             @endif
+                        </td>
+                        <td>
+                            <a href="{{ org_route('billing.invoice.show', $invoice->id) }}" class="btn btn-sm btn-outline-primary">View</a>
                         </td>
                     </tr>
                 @endforeach

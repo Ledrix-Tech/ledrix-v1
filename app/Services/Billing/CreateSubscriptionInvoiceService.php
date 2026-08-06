@@ -21,6 +21,8 @@ class CreateSubscriptionInvoiceService
         private readonly SubscriptionAccessService $accessService,
         private readonly SubscriptionPricingService $pricingService,
         private readonly CancelStaleSubscriptionPaymentsService $cancelStalePayments,
+        private readonly ReferralRewardService $referralRewards,
+        private readonly ActivateTenantSubscriptionService $activationService,
     ) {}
 
     /**
@@ -43,7 +45,8 @@ class CreateSubscriptionInvoiceService
         $currency = strtoupper($currency);
         $gateway = strtolower($gateway);
 
-        // Reuse the latest pending payment for this tenant + gateway (avoid duplicates on retry).
+        // Reuse the latest pending payment for this tenant + gateway (avoid duplicates on retry),
+        // unless unapplied referral rewards exist — then reissue so credits/discounts apply.
         $existingPending = TenantPayment::query()
             ->where('tenant_id', $tenant->id)
             ->where('gateway', $gateway)
@@ -55,7 +58,6 @@ class CreateSubscriptionInvoiceService
             $invoice = TenantInvoice::where('payment_id', $existingPending->id)->first();
 
             if ($invoice) {
-                // Drop older pending attempts, keep only the one being reused.
                 TenantPayment::query()
                     ->where('tenant_id', $tenant->id)
                     ->where('gateway', $gateway)
@@ -63,17 +65,22 @@ class CreateSubscriptionInvoiceService
                     ->where('id', '!=', $existingPending->id)
                     ->each(fn (TenantPayment $p) => $this->cancelStalePayments->cancelPayment($p, 'duplicate_checkout'));
 
-                return ['payment' => $existingPending, 'invoice' => $invoice];
+                $tenant->refresh();
+                if ($this->hasUnappliedReferralRewards($tenant, $currency)) {
+                    $this->cancelStalePayments->cancelPayment($existingPending, 'reissue_with_referral_rewards');
+                } else {
+                    return ['payment' => $existingPending, 'invoice' => $invoice];
+                }
             }
         }
 
         $billingCycle = $membership->billing_cycle ?? 'monthly';
         $plan = $tenant->plan ?? $membership->plan;
-        $amount = $plan
+        $baseAmount = $plan
             ? $this->pricingService->resolveAmount($plan, $billingCycle, $currency)
             : (float) $membership->amount;
 
-        if ($amount <= 0) {
+        if ($baseAmount <= 0) {
             throw new RuntimeException('Subscription amount is not configured for this plan.');
         }
 
@@ -82,15 +89,15 @@ class CreateSubscriptionInvoiceService
         }
 
         if ($gateway === 'bank_transfer' && ! $this->pricingService->bankTransferConfigured($currency)) {
-            throw new RuntimeException('Bank transfer details are not configured. Contact support.');
+            throw new RuntimeException('Bank transfer is not available. Contact support.');
         }
 
-        if ($gateway === 'payfast' && ! config('services.payfast.merchant_id')) {
-            throw new RuntimeException('PayFast is not configured. Contact support.');
+        if ($gateway === 'payfast' && ! app(PlatformBillingSettingsService::class)->isReady('payfast')) {
+            throw new RuntimeException('PayFast is not available. Contact support.');
         }
 
-        if ($gateway === 'stripe' && ! config('services.stripe.secret')) {
-            throw new RuntimeException('Stripe is not configured. Contact support.');
+        if ($gateway === 'stripe' && ! app(PlatformBillingSettingsService::class)->isReady('stripe')) {
+            throw new RuntimeException('Stripe is not available. Contact support.');
         }
 
         $reference = 'LDRX-' . $tenant->id . '-' . strtoupper(Str::random(8));
@@ -113,7 +120,7 @@ class CreateSubscriptionInvoiceService
             $membership,
             $plan,
             $billingCycle,
-            $amount,
+            $baseAmount,
             $currency,
             $reference,
             $graceDays,
@@ -121,6 +128,11 @@ class CreateSubscriptionInvoiceService
             $gateway,
             $renewedBy,
         ) {
+            $tenant->refresh();
+            $adjustment = $this->referralRewards->applyToInvoiceAmount($tenant, $baseAmount, $currency);
+            $amount = $adjustment['amount'];
+
+            // Fully covered by credits/discount — keep a payable minimum of 0 but still issue record.
             $payment = TenantPayment::create([
                 'tenant_id'      => $tenant->id,
                 'membership_id'  => $membership->id,
@@ -135,6 +147,9 @@ class CreateSubscriptionInvoiceService
                 'status'         => 'pending',
                 'payload'        => [
                     'payment_reference' => $reference,
+                    'original_amount'   => $adjustment['original_amount'],
+                    'discount_applied'  => $adjustment['discount_applied'],
+                    'credit_applied'    => $adjustment['credit_applied'],
                 ],
             ]);
 
@@ -145,6 +160,10 @@ class CreateSubscriptionInvoiceService
                 'bank_transfer' => 'Pay via bank transfer using reference ' . $reference,
                 default         => 'Pay using reference ' . $reference,
             };
+
+            if ($adjustment['notes'] !== []) {
+                $invoiceNotes .= ' · ' . implode(' · ', $adjustment['notes']);
+            }
 
             $invoice = TenantInvoice::create([
                 'tenant_id'      => $tenant->id,
@@ -163,6 +182,37 @@ class CreateSubscriptionInvoiceService
                 'notes'          => $invoiceNotes,
             ]);
 
+            // Fully covered by referral credit/discount — activate immediately (no gateway checkout).
+            if ($amount <= 0.0 && (($adjustment['credit_applied'] ?? 0) > 0 || ($adjustment['discount_applied'] ?? 0) > 0)) {
+                $invoice->update([
+                    'notes' => trim($invoiceNotes . ' · Covered by referral credit/discount — auto-activated.'),
+                ]);
+
+                $payment = $this->activationService->activate(
+                    payment: $payment->fresh(['tenant.plan', 'membership', 'invoice']),
+                    renewedBy: 'referral_credit',
+                    note: 'Auto-activated via referral credit/discount.',
+                    payloadMerge: [
+                        'covered_by_referral' => true,
+                        'charged_amount'      => 0,
+                        'original_amount'     => $adjustment['original_amount'],
+                    ],
+                    actorType: 'system',
+                    actorId: null,
+                    actorName: 'System',
+                );
+
+                // Keep membership priced at plan amount, not $0 charged.
+                $payment->membership?->update([
+                    'amount' => $adjustment['original_amount'],
+                ]);
+
+                return [
+                    'payment' => $payment,
+                    'invoice' => $payment->invoice ?? $invoice->fresh(),
+                ];
+            }
+
             if (! $tenant->isOnTrial()) {
                 $membership->update(['status' => 'past_due']);
             }
@@ -178,10 +228,13 @@ class CreateSubscriptionInvoiceService
                     'subject_id'   => $payment->id,
                     'description'  => ucfirst($gateway) . ' subscription invoice issued.',
                     'after'        => [
-                        'reference' => $reference,
-                        'amount'    => $amount,
-                        'currency'  => $currency,
-                        'gateway'   => $gateway,
+                        'reference'        => $reference,
+                        'amount'           => $amount,
+                        'original_amount'  => $adjustment['original_amount'],
+                        'discount_applied' => $adjustment['discount_applied'],
+                        'credit_applied'   => $adjustment['credit_applied'],
+                        'currency'         => $currency,
+                        'gateway'          => $gateway,
                     ],
                 ]
             );
@@ -213,5 +266,22 @@ class CreateSubscriptionInvoiceService
                 'message'   => $e->getMessage(),
             ]);
         }
+    }
+
+    private function hasUnappliedReferralRewards(Tenant $tenant, string $currency): bool
+    {
+        $currency = strtoupper($currency);
+        $meta = is_array($tenant->meta) ? $tenant->meta : [];
+
+        $credits = $meta['billing_credits'] ?? [];
+        if (is_array($credits) && (float) ($credits[$currency] ?? 0) > 0) {
+            return true;
+        }
+
+        $discount = $meta['referral_discount'] ?? null;
+
+        return is_array($discount)
+            && strtoupper((string) ($discount['currency'] ?? '')) === $currency
+            && (float) ($discount['value'] ?? 0) > 0;
     }
 }

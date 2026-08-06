@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\ClientTicket;
 use App\Models\Order;
 use App\Models\Questionnair;
+use App\Services\Tenant\SubscriptionAccessService;
 use App\Services\Tenant\TenantFeatureService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesPaymentFlow;
@@ -30,6 +31,10 @@ class ClientPortalSecurityTest extends TestCase
             $mock->shouldReceive('enabled')->andReturn(true);
             $mock->shouldReceive('assertEnabled')->andReturnNull();
             $mock->shouldReceive('assertAnyEnabled')->andReturnNull();
+        });
+
+        $this->mock(SubscriptionAccessService::class, function ($mock) {
+            $mock->shouldReceive('canUseCrm')->andReturn(true);
         });
     }
 

@@ -2,35 +2,49 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Http\Controllers\Concerns\ResolvesOrganizationTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Central\TenantPayment;
 use App\Services\Billing\BankTransferQrService;
 use App\Services\Billing\CreateSubscriptionInvoiceService;
 use App\Services\Billing\ReportBankTransferPaymentService;
 use App\Services\Billing\SubscriptionPricingService;
+use App\Services\Billing\TenantBillingRegion;
 use App\Services\Tenant\SubscriptionAccessService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
 class BankTransferBillingController extends Controller
 {
+    use ResolvesOrganizationTenant;
+
     public function checkout(
         CreateSubscriptionInvoiceService $invoiceService,
         SubscriptionAccessService $accessService,
         SubscriptionPricingService $pricingService,
     ) {
         if (! $pricingService->bankTransferConfigured('PKR')) {
-            return redirect()->route('tenant.billing')->with(
+            return $this->organizationRedirect(
+                'billing',
+                [],
                 'error',
                 'Bank transfer is not configured yet. Contact support or use Stripe.'
             );
         }
 
-        $tenant = Auth::guard('tenant')->user();
+        $tenant = $this->organizationTenant();
+
+        if (! TenantBillingRegion::isPakistanBuyer($tenant)) {
+            return $this->organizationRedirect(
+                'billing',
+                [],
+                'error',
+                'Meezan is for Pakistan (PKR) billing. Switch region or use Stripe (USD).'
+            );
+        }
 
         if (! $accessService->canPayOnBilling($tenant)) {
-            return redirect()->route('tenant.billing')->with('success', 'Your subscription is already active.');
+            return $this->organizationRedirect('billing', [], 'success', 'Your subscription is already active.');
         }
 
         $existing = TenantPayment::query()
@@ -42,28 +56,34 @@ class BankTransferBillingController extends Controller
             ->first();
 
         if ($existing?->invoice) {
-            return redirect()
-                ->route('tenant.billing.bank-transfer.show', $existing)
-                ->with('success', 'You already have a pending transfer — scan the QR or use the reference below.');
+            return $this->organizationRedirect(
+                'billing.bank-transfer.show',
+                $existing,
+                'success',
+                'You already have a pending transfer — scan the QR or use the reference below.'
+            );
         }
 
         try {
             $orderType = $accessService->paymentOrderType($tenant);
             $result = $invoiceService->createAndNotify($tenant, 'bank_transfer', 'PKR', $orderType);
         } catch (RuntimeException $e) {
-            return redirect()->route('tenant.billing')->with('error', $e->getMessage());
+            return $this->organizationRedirect('billing', [], 'error', $e->getMessage());
         }
 
-        return redirect()
-            ->route('tenant.billing.bank-transfer.show', $result['payment'])
-            ->with('success', 'Scan the QR code to pay, then submit your bank transaction ID.');
+        return $this->organizationRedirect(
+            'billing.bank-transfer.show',
+            $result['payment'],
+            'success',
+            'Scan the QR code to pay, then submit your bank transaction ID.'
+        );
     }
 
     public function show(
         TenantPayment $payment,
         BankTransferQrService $qrService,
     ) {
-        $tenant = Auth::guard('tenant')->user();
+        $tenant = $this->organizationTenant();
 
         if ($payment->tenant_id !== $tenant->id || $payment->gateway !== 'bank_transfer') {
             abort(404);
@@ -72,20 +92,20 @@ class BankTransferBillingController extends Controller
         $payment->load('invoice');
 
         if ($payment->status === 'paid') {
-            return redirect()->route('tenant.billing')->with('success', 'This payment is already confirmed.');
+            return $this->organizationRedirect('billing', [], 'success', 'This payment is already confirmed.');
         }
 
         $bank = config('services.bank_transfer.pkr', []);
         $qr = $this->resolveQr($qrService, $payment, $bank);
 
-        return view('front.pages.tenant.bank-transfer-instructions', [
-            'tenant'    => $tenant,
-            'payment'   => $payment,
-            'invoice'   => $payment->invoice,
-            'bank'      => $bank,
-            'qrDataUri' => $qr['data_uri'],
-            'qrError'   => $qr['error'] ?? null,
-            'raastQr'   => $qr['raast'],
+        return $this->organizationView('bank-transfer-instructions', [
+            'tenant'      => $tenant,
+            'payment'     => $payment,
+            'invoice'     => $payment->invoice,
+            'bank'        => $bank,
+            'qrDataUri'   => $qr['data_uri'],
+            'qrError'     => $qr['error'] ?? null,
+            'raastQr'     => $qr['raast'],
             'raastQrMode' => config('services.bank_transfer.raast_qr_mode', 'dynamic'),
         ]);
     }
@@ -112,14 +132,14 @@ class BankTransferBillingController extends Controller
         TenantPayment $payment,
         ReportBankTransferPaymentService $reportService,
     ) {
-        $tenant = Auth::guard('tenant')->user();
+        $tenant = $this->organizationTenant();
 
         if ($payment->tenant_id !== $tenant->id || $payment->gateway !== 'bank_transfer') {
             abort(404);
         }
 
         if ($payment->status !== 'pending') {
-            return redirect()->route('tenant.billing')->with('error', 'This payment is no longer pending.');
+            return $this->organizationRedirect('billing', [], 'error', 'This payment is no longer pending.');
         }
 
         $validated = $request->validate([

@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Http\Controllers\Concerns\ResolvesOrganizationTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Central\TenantInvoice;
 use App\Models\Central\TenantPayment;
 use App\Services\Billing\BankTransferQrService;
 use App\Services\Billing\CancelStaleSubscriptionPaymentsService;
 use App\Services\Billing\PayFastService;
+use App\Services\Billing\ReferralRewardService;
 use App\Services\Billing\SubscriptionPricingService;
+use App\Services\Billing\TenantBillingRegion;
 use App\Services\Billing\TenantStripeCheckoutService;
 use App\Services\Tenant\SubscriptionAccessService;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BillingController extends Controller
 {
+    use ResolvesOrganizationTenant;
+
     public function index(
         SubscriptionAccessService $accessService,
         SubscriptionPricingService $pricingService,
@@ -22,9 +28,18 @@ class BillingController extends Controller
         TenantStripeCheckoutService $stripeCheckout,
         CancelStaleSubscriptionPaymentsService $cancelStalePayments,
         BankTransferQrService $qrService,
+        ReferralRewardService $referralRewards,
     ) {
-        $tenant = Auth::guard('tenant')->user();
+        $tenant = $this->organizationTenant();
         $tenant->load(['plan', 'activeMembership']);
+
+        $billingCurrency = TenantBillingRegion::syncPreferredCurrency($tenant);
+        $billingCredits = $referralRewards->creditBalances($tenant);
+        $billingCredit = (float) ($billingCredits[$billingCurrency] ?? 0);
+        $pendingReferralDiscount = is_array($tenant->meta['referral_discount'] ?? null)
+            ? $tenant->meta['referral_discount']
+            : null;
+        $isPakistanBuyer = $billingCurrency === TenantBillingRegion::CURRENCY_PKR;
 
         $membership = $accessService->currentMembership($tenant);
         $pricing = $pricingService->displayAmount($tenant, $membership);
@@ -66,10 +81,17 @@ class BillingController extends Controller
             ->latest('issued_at')
             ->get();
 
-        $payfastReady = $payFast->isConfigured();
-        $stripeReady = $stripeCheckout->isConfigured();
-        $bankTransferReady = $pricingService->bankTransferConfigured('PKR');
-        $hasPaymentOptions = $payfastReady || $stripeReady || $bankTransferReady;
+        $stripeConfigured = $stripeCheckout->isConfigured();
+        $payfastConfigured = $payFast->isConfigured();
+        $meezanConfigured = $pricingService->bankTransferConfigured('PKR');
+
+        $stripeReady = $stripeConfigured && ! $isPakistanBuyer;
+        $payfastReady = $payfastConfigured && $isPakistanBuyer;
+        $bankTransferReady = $meezanConfigured && $isPakistanBuyer;
+        $hasPaymentOptions = $stripeReady || $payfastReady || $bankTransferReady;
+
+        $displayAmount = $isPakistanBuyer ? $pricing['pkr'] : $pricing['usd'];
+        $billingRegionLabel = TenantBillingRegion::regionLabel($tenant);
 
         $bankTransferQr = null;
         $bankTransferQrError = null;
@@ -85,16 +107,23 @@ class BillingController extends Controller
             }
         }
 
-        return view('front.pages.tenant.billing', compact(
+        return $this->organizationView('billing', compact(
             'tenant',
             'membership',
             'pendingPayment',
             'pendingBankTransfer',
             'invoices',
             'pricing',
-            'payfastReady',
+            'displayAmount',
+            'billingCurrency',
+            'billingRegionLabel',
+            'isPakistanBuyer',
             'stripeReady',
+            'stripeConfigured',
+            'payfastReady',
             'bankTransferReady',
+            'meezanConfigured',
+            'payfastConfigured',
             'hasPaymentOptions',
             'needsPayment',
             'canPayNow',
@@ -103,6 +132,27 @@ class BillingController extends Controller
             'daysUntilRenewal',
             'bankTransferQr',
             'bankTransferQrError',
+            'billingCredit',
+            'pendingReferralDiscount',
         ));
+    }
+
+    public function updateBillingCurrency(Request $request)
+    {
+        $tenant = $this->organizationTenant();
+
+        $validated = $request->validate([
+            'preferred_billing_currency' => ['required', Rule::in(['PKR', 'USD'])],
+        ]);
+
+        $tenant->forceFill([
+            'preferred_billing_currency' => $validated['preferred_billing_currency'],
+        ])->save();
+
+        $label = $validated['preferred_billing_currency'] === 'PKR'
+            ? 'Pakistan (PKR) — Meezan / PayFast'
+            : 'International (USD) — Stripe';
+
+        return $this->organizationRedirect('billing', [], 'success', "Billing region updated to {$label}.");
     }
 }

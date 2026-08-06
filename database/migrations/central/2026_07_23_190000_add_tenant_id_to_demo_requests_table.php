@@ -10,22 +10,32 @@ return new class extends Migration
 
     public function up(): void
     {
-        Schema::connection('central')->table('demo_requests', function (Blueprint $table) {
-            $table->foreignId('tenant_id')
-                ->nullable()
-                ->after('id')
-                ->constrained('tenants')
-                ->nullOnDelete();
+        if (! Schema::connection('central')->hasColumn('demo_requests', 'tenant_id')) {
+            Schema::connection('central')->table('demo_requests', function (Blueprint $table) {
+                $table->foreignId('tenant_id')
+                    ->nullable()
+                    ->after('id')
+                    ->constrained('tenants')
+                    ->nullOnDelete();
+            });
+        }
 
-            $table->timestamp('demo_expires_at')->nullable()->after('demo_sent_at');
-        });
+        if (! Schema::connection('central')->hasColumn('demo_requests', 'demo_expires_at')) {
+            Schema::connection('central')->table('demo_requests', function (Blueprint $table) {
+                $table->timestamp('demo_expires_at')->nullable()->after('demo_sent_at');
+            });
+        }
     }
 
     public function down(): void
     {
         Schema::connection('central')->table('demo_requests', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('tenant_id');
-            $table->dropColumn('demo_expires_at');
+            if (Schema::connection('central')->hasColumn('demo_requests', 'tenant_id')) {
+                $table->dropConstrainedForeignId('tenant_id');
+            }
+            if (Schema::connection('central')->hasColumn('demo_requests', 'demo_expires_at')) {
+                $table->dropColumn('demo_expires_at');
+            }
         });
     }
 };

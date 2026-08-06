@@ -45,6 +45,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrap();
 
+        try {
+            app(\App\Services\Billing\PlatformBillingSettingsService::class)->applyToConfig();
+        } catch (\Throwable) {
+            // Central DB may be unavailable during early boot / migrate.
+        }
+
         View::composer(['admin.*', 'sellers.*'], function ($view) {
             $view->with('authAdmin', Auth::guard('admin')->user());
         });

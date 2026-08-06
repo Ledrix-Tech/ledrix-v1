@@ -234,6 +234,14 @@
                                         <input type="text" id="address" name="address" value="{{ old('address') }}"
                                             class="form-control" placeholder="If different from billing">
                                     </div>
+                                    <div class="col-md-6">
+                                        <label class="auth-label" for="referral-code">Referral code <span class="text-muted fw-normal">(optional)</span></label>
+                                        <input type="text" id="referral-code" name="referral_code"
+                                            value="{{ old('referral_code', request('ref')) }}"
+                                            class="form-control @error('referral_code') is-invalid @enderror"
+                                            placeholder="e.g. NOVA8X2K" maxlength="20">
+                                        @error('referral_code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                    </div>
                                 </div>
 
                                 <div class="auth-trial-banner d-lg-none">

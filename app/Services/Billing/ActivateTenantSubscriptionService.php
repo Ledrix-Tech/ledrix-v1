@@ -121,9 +121,10 @@ class ActivateTenantSubscriptionService
                 ]
             );
 
-            $this->sendActivatedEmail($tenant, $payment);
+            $freshPayment = $payment->fresh(['tenant', 'membership', 'invoice']);
+            $this->sendActivatedEmail($tenant, $freshPayment);
 
-            return $payment->fresh(['tenant', 'membership', 'invoice']);
+            return $freshPayment;
         });
     }
 
@@ -171,11 +172,14 @@ class ActivateTenantSubscriptionService
     private function sendActivatedEmail($tenant, TenantPayment $payment): void
     {
         try {
-            Mail::to($tenant->email)->send(new TenantSubscriptionActivatedMail($tenant, $payment));
+            Mail::to($tenant->email)->send(
+                new TenantSubscriptionActivatedMail($tenant, $payment, $payment->invoice)
+            );
         } catch (Throwable $e) {
             Log::warning('Subscription activated email failed', [
-                'tenant_id' => $tenant->id,
-                'message'   => $e->getMessage(),
+                'tenant_id'  => $tenant->id,
+                'payment_id' => $payment->id,
+                'message'    => $e->getMessage(),
             ]);
         }
     }
