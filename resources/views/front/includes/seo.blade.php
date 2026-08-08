@@ -92,6 +92,9 @@
 @if (config('seo.google_site_verification'))
     <meta name="google-site-verification" content="{{ config('seo.google_site_verification') }}">
 @endif
+@if (config('seo.facebook_domain_verification'))
+    <meta name="facebook-domain-verification" content="{{ config('seo.facebook_domain_verification') }}">
+@endif
 
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="{{ $ogType }}">

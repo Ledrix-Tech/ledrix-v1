@@ -14,6 +14,8 @@ return [
 
     'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),
 
+    'facebook_domain_verification' => env('FACEBOOK_DOMAIN_VERIFICATION'),
+
     'theme_color' => '#4338ca',
 
     'og_image' => 'front-assets/imgs/logo-ic.png',
