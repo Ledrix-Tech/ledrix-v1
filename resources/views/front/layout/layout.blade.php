@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="{{ asset('front-assets/css/base.css') }}">
     @stack('styles')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/css/toastr.css" rel="stylesheet">
+    @include('front.includes.analytics')
     @stack('head')
 </head>
 

@@ -16,6 +16,13 @@
         $serviceName = old('service_name', $isOrder ? $order->service_name ?? '' : ($lead->meta['service'] ?? ''));
         $dueCents = (int) ($isOrder ? $order->balance_due ?? 0 : 0);
         $selectedProvider = old('provider', '');
+        $hasStripe = $tenantHasStripe ?? tenantFeature('stripe');
+        $hasPayPal = $tenantHasPayPal ?? tenantFeature('paypal');
+        if ($selectedProvider === '' && $hasStripe && ! $hasPayPal) {
+            $selectedProvider = 'stripe';
+        } elseif ($selectedProvider === '' && ! $hasStripe && $hasPayPal) {
+            $selectedProvider = 'paypal';
+        }
     @endphp
 
     <div class="crm-paylink-layout">
@@ -107,34 +114,44 @@
                         <div class="crm-paylink-section-title">
                             <i class="bi bi-credit-card"></i> Payment method
                         </div>
-                        <div class="crm-paylink-provider mb-3">
-                            <label class="crm-paylink-provider-option">
-                                <input type="radio" name="provider" value="stripe" required
-                                    @checked($selectedProvider === 'stripe')>
-                                <span class="crm-paylink-provider-card">
-                                    <span class="crm-paylink-provider-icon crm-paylink-provider-icon--stripe">
-                                        <i class="fa fa-cc-stripe"></i>
-                                    </span>
-                                    <span>
-                                        <span class="crm-paylink-provider-name">Stripe</span>
-                                        <span class="crm-paylink-provider-desc d-block">Card payments</span>
-                                    </span>
-                                </span>
-                            </label>
-                            <label class="crm-paylink-provider-option">
-                                <input type="radio" name="provider" value="paypal" required
-                                    @checked($selectedProvider === 'paypal')>
-                                <span class="crm-paylink-provider-card">
-                                    <span class="crm-paylink-provider-icon crm-paylink-provider-icon--paypal">
-                                        <i class="fa fa-cc-paypal"></i>
-                                    </span>
-                                    <span>
-                                        <span class="crm-paylink-provider-name">PayPal</span>
-                                        <span class="crm-paylink-provider-desc d-block">PayPal checkout</span>
-                                    </span>
-                                </span>
-                            </label>
-                        </div>
+                        @if (! $hasStripe && ! $hasPayPal)
+                            <div class="alert alert-warning mb-0">
+                                No payment providers are enabled for this plan.
+                            </div>
+                        @else
+                            <div class="crm-paylink-provider mb-3">
+                                @if ($hasStripe)
+                                    <label class="crm-paylink-provider-option">
+                                        <input type="radio" name="provider" value="stripe" required
+                                            @checked($selectedProvider === 'stripe')>
+                                        <span class="crm-paylink-provider-card">
+                                            <span class="crm-paylink-provider-icon crm-paylink-provider-icon--stripe">
+                                                <i class="fa fa-cc-stripe"></i>
+                                            </span>
+                                            <span>
+                                                <span class="crm-paylink-provider-name">Stripe</span>
+                                                <span class="crm-paylink-provider-desc d-block">Card payments</span>
+                                            </span>
+                                        </span>
+                                    </label>
+                                @endif
+                                @if ($hasPayPal)
+                                    <label class="crm-paylink-provider-option">
+                                        <input type="radio" name="provider" value="paypal" required
+                                            @checked($selectedProvider === 'paypal')>
+                                        <span class="crm-paylink-provider-card">
+                                            <span class="crm-paylink-provider-icon crm-paylink-provider-icon--paypal">
+                                                <i class="fa fa-cc-paypal"></i>
+                                            </span>
+                                            <span>
+                                                <span class="crm-paylink-provider-name">PayPal</span>
+                                                <span class="crm-paylink-provider-desc d-block">PayPal checkout</span>
+                                            </span>
+                                        </span>
+                                    </label>
+                                @endif
+                            </div>
+                        @endif
                     </div>
 
                     <div class="crm-paylink-section mb-0">

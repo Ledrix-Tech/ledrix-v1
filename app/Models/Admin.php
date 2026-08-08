@@ -19,13 +19,17 @@ class Admin extends Authenticatable
         'tenant_id',
         'name',
         'email',
-        'password', // Add all required fields
+        'password',
         'role',
-        'last_seen'
+        'last_seen',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $hidden = [
         'password',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     public function isOnline()

@@ -88,21 +88,51 @@
 
                         $viewKey = BriefServiceCatalog::viewKeyFor($order->service_name);
 
+                        $isCompleted = ($order->brief?->status ?? null) === 'completed';
+
                     @endphp
 
-                    @includeIf('clients.pages.questionnaires.' . $viewKey, [
+                    @if ($isCompleted)
 
-                        'order' => $order,
+                        <div class="alert alert-success d-flex align-items-center gap-2 mb-4">
 
-                        'brief' => BriefServiceCatalog::metaForView($order->brief),
+                            <i class="bi bi-lock-fill"></i>
 
-                        'questionnair' => $order->brief,
+                            <span>This brief is completed and locked. Contact your seller if changes are needed.</span>
 
-                        'mode' => $mode === 'token' ? 'token' : 'dashboard',
+                        </div>
 
-                        'token' => $token ?? null,
+                        @include('partials.brief-readonly-display', [
 
-                    ])
+                            'briefMeta' => BriefServiceCatalog::metaForView($order->brief),
+
+                        ])
+
+                    @elseif ($viewKey)
+
+                        @includeIf('clients.pages.questionnaires.' . $viewKey, [
+
+                            'order' => $order,
+
+                            'brief' => BriefServiceCatalog::metaForView($order->brief),
+
+                            'questionnair' => $order->brief,
+
+                            'mode' => $mode === 'token' ? 'token' : 'dashboard',
+
+                            'token' => $token ?? null,
+
+                        ])
+
+                    @else
+
+                        <div class="alert alert-warning mb-0">
+
+                            No questionnaire is available for this service.
+
+                        </div>
+
+                    @endif
 
                 @endif
 

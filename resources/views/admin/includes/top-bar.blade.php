@@ -4,7 +4,13 @@
             <i class="bi bi-list"></i>
         </button>
         <a href="{{ route('admin.index.get') }}" class="crm-topbar-brand">
-            <img src="{{ asset(config('branding.logo')) }}" alt="Ledrix">
+            @php
+                $brandLogo = config('branding.logo');
+                if (($tenantHasWhiteLabel ?? false) && ! empty($tenantBrandLogo ?? null)) {
+                    $brandLogo = 'storage/'.$tenantBrandLogo;
+                }
+            @endphp
+            <img src="{{ asset($brandLogo) }}" alt="{{ ($tenantHasWhiteLabel ?? false) ? 'Workspace' : 'Ledrix' }}">
             <span class="crm-topbar-badge d-none d-sm-inline">CRM Admin</span>
         </a>
     </div>
@@ -24,8 +30,25 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end crm-user-menu">
                 <li>
+                    <a class="dropdown-item" href="{{ route('auth.profile.get') }}">
+                        <i class="bi bi-person me-2"></i> Profile
+                    </a>
+                </li>
+                @if (($user->role ?? null) === 'admin')
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.org.overview') }}">
+                        <i class="bi bi-building me-2"></i> Organization
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('tenant.dashboard') }}" target="_blank" rel="noopener">
+                        <i class="bi bi-box-arrow-up-right me-2"></i> Tenant portal
+                    </a>
+                </li>
+                @endif
+                <li>
                     <a class="dropdown-item" href="{{ route('index.get') }}" target="_blank">
-                        <i class="bi bi-box-arrow-up-right me-2"></i> View site
+                        <i class="bi bi-globe me-2"></i> View site
                     </a>
                 </li>
                 <li><hr class="dropdown-divider"></li>

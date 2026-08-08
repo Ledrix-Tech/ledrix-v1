@@ -15,6 +15,7 @@ class ProcessTenantSubscriptionsService
     {
         return [
             'reminders_7d'    => $this->sendRenewalReminders(7, 'renewal_reminder_7d_sent_at'),
+            'reminders_3d'    => $this->sendRenewalReminders(3, 'renewal_reminder_3d_sent_at'),
             'reminders_1d'    => $this->sendRenewalReminders(1, 'renewal_reminder_1d_sent_at'),
             'marked_past_due' => $this->markExpiredActiveAsPastDue(),
             'expired'         => $this->expireOverdueMemberships(),
@@ -23,21 +24,19 @@ class ProcessTenantSubscriptionsService
 
     private function sendRenewalReminders(int $daysBefore, string $sentAtColumn): int
     {
-        if (! in_array($daysBefore, config('subscription.renewal_reminder_days', [7, 1]), true)) {
+        if (! in_array($daysBefore, config('subscription.renewal_reminder_days', [7, 3, 1]), true)) {
             return 0;
         }
 
         $count = 0;
-        $today = now()->toDateString();
-        $windowEnd = now()->addDays($daysBefore)->toDateString();
+        $targetDate = now()->addDays($daysBefore)->toDateString();
 
         $memberships = TenantMembership::query()
             ->with(['tenant.plan'])
             ->where('status', 'active')
             ->whereNull($sentAtColumn)
             ->whereNotNull('end_date')
-            ->whereDate('end_date', '>=', $today)
-            ->whereDate('end_date', '<=', $windowEnd)
+            ->whereDate('end_date', $targetDate)
             ->get();
 
         foreach ($memberships as $membership) {
@@ -48,10 +47,6 @@ class ProcessTenantSubscriptionsService
             }
 
             $daysLeft = $membership->daysUntilExpiry();
-
-            if ($daysLeft > $daysBefore) {
-                continue;
-            }
 
             try {
                 Mail::to($tenant->email)->send(

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class BriefController extends Controller
 {
@@ -19,15 +20,15 @@ class BriefController extends Controller
     {
         $client = auth('client')->user();
 
-        // Fetch client orders with their brief (if exists)
         $orders = Order::query()
             ->with(['brand:id,brand_name', 'seller:id,name', 'client:id,name,email', 'brief'])
             ->where('client_id', $client->id)
             ->where('order_type', 'original')
+            ->whereIn('service_name', BriefServiceCatalog::questionnaireServiceNames())
             ->latest('id')
             ->paginate(20)
             ->withQueryString();
-        // dd($orders);
+
         return view('clients.pages.briefs', compact('orders'));
     }
 
@@ -121,6 +122,8 @@ class BriefController extends Controller
             abort_unless((int)$brief->client_id === (int)auth('client')->id(), 403, 'Unauthorized brief access.');
         }
 
+        abort_if($brief->status === 'completed', 403, 'This brief is completed and can no longer be edited.');
+
         $validated = $request->validate([
             'query' => ['required', 'array'],
             'attachments.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf,doc,docx,zip', 'max:10240'],
@@ -188,6 +191,14 @@ class BriefController extends Controller
 
         $order = Order::select(['id', 'client_id', 'service_name'])->findOrFail($validated['order_id']);
         abort_unless((int)$order->client_id === (int)$client->id, 403);
+        abort_unless(BriefServiceCatalog::hasQuestionnaire($order->service_name), 422, 'No questionnaire for this service.');
+
+        $existing = Questionnair::query()->where('order_id', $order->id)->first();
+        if ($existing && $existing->status === 'completed') {
+            throw ValidationException::withMessages([
+                'order_id' => 'This brief is completed and can no longer be edited.',
+            ]);
+        }
 
         $brief = Questionnair::updateOrCreate(
             ['order_id' => $order->id],

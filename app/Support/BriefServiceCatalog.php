@@ -5,7 +5,6 @@ namespace App\Support;
 use App\Models\Order;
 use App\Models\Questionnair;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 final class BriefServiceCatalog
 {
@@ -28,13 +27,18 @@ final class BriefServiceCatalog
             return null;
         }
 
-        return self::SERVICE_VIEWS[$serviceName]
-            ?? Str::slug($serviceName);
+        return self::SERVICE_VIEWS[$serviceName] ?? null;
     }
 
     public static function hasQuestionnaire(?string $serviceName): bool
     {
         return self::viewKeyFor($serviceName) !== null;
+    }
+
+    /** @return list<string> */
+    public static function questionnaireServiceNames(): array
+    {
+        return array_keys(self::SERVICE_VIEWS);
     }
 
     /**

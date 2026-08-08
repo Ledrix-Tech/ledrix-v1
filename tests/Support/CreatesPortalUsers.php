@@ -32,6 +32,15 @@ trait CreatesPortalUsers
     {
         $this->mock(\App\Services\Tenant\SubscriptionAccessService::class, function ($mock) {
             $mock->shouldReceive('canUseCrm')->andReturn(true);
+            $mock->shouldReceive('canAccessOrgBilling')->andReturn(true);
+            $mock->shouldReceive('needsPayment')->andReturn(false);
+            $mock->shouldReceive('expiresSoon')->andReturn(false);
+            $mock->shouldReceive('currentMembership')->andReturnUsing(function ($tenant) {
+                return \App\Models\Central\TenantMembership::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->latest('start_date')
+                    ->first();
+            });
         });
     }
 
@@ -50,6 +59,7 @@ trait CreatesPortalUsers
             $mock->shouldReceive('assertEnabled')->andReturnNull();
             $mock->shouldReceive('assertAnyEnabled')->andReturnNull();
             $mock->shouldReceive('assertProviderEnabled')->andReturnNull();
+            $mock->shouldReceive('matrixForTenant')->andReturn([]);
         });
     }
 }

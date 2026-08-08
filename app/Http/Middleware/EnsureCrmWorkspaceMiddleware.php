@@ -65,7 +65,7 @@ class EnsureCrmWorkspaceMiddleware
                 ->route('admin.login.get')
                 ->with(
                     'error',
-                    'Your organization subscription is not active. Ask an administrator to renew billing.'
+                    'Your organization subscription is not active. Ask your administrator to renew billing in Admin → Organization → Billing.'
                 );
         }
 

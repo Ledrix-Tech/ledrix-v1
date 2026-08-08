@@ -156,4 +156,35 @@ class BriefClientSellerTest extends TestCase
         $this->assertCount(1, $filtered);
         $this->assertSame($order->id, $filtered->first()->id);
     }
+
+    public function test_unknown_service_has_no_questionnaire(): void
+    {
+        $this->assertFalse(BriefServiceCatalog::hasQuestionnaire('Custom Mystery Service'));
+        $this->assertNull(BriefServiceCatalog::viewKeyFor('Custom Mystery Service'));
+        $this->assertTrue(BriefServiceCatalog::hasQuestionnaire('Logo Design'));
+    }
+
+    public function test_completed_brief_cannot_be_edited_by_client(): void
+    {
+        $client = $this->createPortalClient();
+        $order = $this->createLogoOrder($client);
+
+        Questionnair::create([
+            'tenant_id'    => 1,
+            'order_id'     => $order->id,
+            'client_id'    => $client->id,
+            'service_name' => 'Logo Design',
+            'status'       => 'completed',
+            'meta'         => ['query' => ['company_name' => 'Locked Co']],
+        ]);
+
+        $this->actingAs($client, 'client')
+            ->post(route('client.brief-form.post'), [
+                'order_id' => $order->id,
+                'query'    => ['company_name' => 'Should Fail'],
+            ])
+            ->assertSessionHasErrors('order_id');
+
+        $this->assertSame('Locked Co', Questionnair::where('order_id', $order->id)->first()->meta['query']['company_name']);
+    }
 }

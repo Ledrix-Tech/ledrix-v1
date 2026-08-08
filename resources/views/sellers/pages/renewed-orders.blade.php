@@ -12,9 +12,9 @@
                         <h1 class="fw-bold" style="color: #003C51;">Order & Renewal's</h1>
                     </div>
                     <div class="examplesearch-form mx-3">
-                        <form action="" method="" class="example">
+                        <form action="{{ url()->current() }}" method="GET" class="example">
                             <div class="d-flex">
-                                <input type="text" placeholder="Search.." value="" name="search"
+                                <input type="text" placeholder="Search.." value="{{ request('q', request('search')) }}" name="q"
                                     class="form-control">
                                 <button type="submit" class="btn text-white bg-gradient-3"><i
                                         class="fa fa-search"></i></button>
@@ -219,29 +219,33 @@
                                                     </td>
                                                     <td>{{ optional($order->paid_at)->toDayDateTimeString() ?? '—' }}</td>
                                                     <td>
-                                                        @if ($order->latestPaymentLink->is_active_link)
-                                                            <a href="javascript:void(0);"
-                                                                class="badge badge-success btn-sm togglePaylink"
-                                                                data-toggle="tooltip"
-                                                                data-id="{{ $order->latestPaymentLink->id }}"
-                                                                data-status="false">
-                                                                Active
-                                                            </a>
-                                                            @if ($order->latestPaymentLink->last_issued_url)
-                                                                <button type="button"
-                                                                    class="badge btn-outline-info copyBtn"
-                                                                    data-url="{{ $order->latestPaymentLink->last_issued_url }}">
-                                                                    Copy
-                                                                </button>
+                                                        @if ($order->latestPaymentLink)
+                                                            @if ($order->latestPaymentLink->is_active_link)
+                                                                <a href="javascript:void(0);"
+                                                                    class="badge badge-success btn-sm togglePaylink"
+                                                                    data-toggle="tooltip"
+                                                                    data-id="{{ $order->latestPaymentLink->id }}"
+                                                                    data-status="false">
+                                                                    Active
+                                                                </a>
+                                                                @if ($order->latestPaymentLink->last_issued_url)
+                                                                    <button type="button"
+                                                                        class="badge btn-outline-info copyBtn"
+                                                                        data-url="{{ $order->latestPaymentLink->last_issued_url }}">
+                                                                        Copy
+                                                                    </button>
+                                                                @endif
+                                                            @else
+                                                                <a href="javascript:void(0);"
+                                                                    class="badge badge-danger btn-sm togglePaylink"
+                                                                    data-toggle="tooltip"
+                                                                    data-id="{{ $order->latestPaymentLink->id }}"
+                                                                    data-status="true">
+                                                                    Inactive
+                                                                </a>
                                                             @endif
                                                         @else
-                                                            <a href="javascript:void(0);"
-                                                                class="badge badge-danger btn-sm togglePaylink"
-                                                                data-toggle="tooltip"
-                                                                data-id="{{ $order->latestPaymentLink->id }}"
-                                                                data-status="true">
-                                                                Inactive
-                                                            </a>
+                                                            <span class="text-muted">—</span>
                                                         @endif
                                                     </td>
                                                 </tr>

@@ -6,7 +6,7 @@
     <div class="sa-page-header">
         <div>
             <h1>Demo Requests</h1>
-            <p>Inbound demo interest from the marketing site</p>
+            <p>Inbound demos from <code>/lp/demo</code> and the marketing contact form</p>
         </div>
     </div>
 
@@ -48,6 +48,7 @@
                             <th>#</th>
                             <th>Contact</th>
                             <th>Company</th>
+                            <th>Source</th>
                             <th>Notes</th>
                             <th>Tenant</th>
                             <th>Status</th>
@@ -64,8 +65,18 @@
                                     <small><a href="mailto:{{ $demo->email }}">{{ $demo->email }}</a></small>
                                 </td>
                                 <td data-label="Company">{{ $demo->company ?? '—' }}</td>
+                                <td data-label="Source">
+                                    @if ($demo->marketingSource())
+                                        <span class="badge bg-primary">{{ $demo->marketingSource() }}</span>
+                                        @if ($demo->marketingLanding())
+                                            <br><small class="text-muted">{{ $demo->marketingLanding() }}</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">marketing</span>
+                                    @endif
+                                </td>
                                 <td data-label="Notes">
-                                    <small class="text-muted">{{ \Illuminate\Support\Str::limit($demo->description, 80) ?: '—' }}</small>
+                                    <small class="text-muted">{{ \Illuminate\Support\Str::limit($demo->notesWithoutMarketing(), 80) ?: '—' }}</small>
                                 </td>
                                 <td data-label="Tenant">
                                     @if ($demo->tenant)

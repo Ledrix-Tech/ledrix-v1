@@ -76,7 +76,7 @@
             <h2>Service progress</h2>
         </div>
         <div class="crm-card-body">
-            <canvas id="leadStatusChart" style="max-height: 320px; width: 100%;"></canvas>
+            <canvas id="orderStatusChart" style="max-height: 320px; width: 100%;"></canvas>
         </div>
     </div>
 @endsection
@@ -86,7 +86,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const progressData = @json($chartData);
-            const canvas = document.getElementById('leadStatusChart');
+            const canvas = document.getElementById('orderStatusChart');
             if (!canvas || typeof Chart === 'undefined') return;
 
             new Chart(canvas.getContext('2d'), {
@@ -97,7 +97,7 @@
                         label: 'Orders',
                         data: progressData.map(p => p.count),
                         borderRadius: 8,
-                        backgroundColor: ['#4438c9', '#8b52fe', '#04be63', '#f59e0b', '#94a3b8'],
+                        backgroundColor: ['#4438c9', '#8b52fe', '#04be63', '#f59e0b', '#94a3b8', '#0ea5e9', '#ef4444', '#64748b'],
                     }]
                 },
                 options: {

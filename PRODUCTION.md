@@ -351,6 +351,7 @@ Daily scheduler runs `tenants:process-subscriptions` (see `routes/console.php`):
 | When | Email / action |
 |------|----------------|
 | 7 days before `end_date` | `TenantSubscriptionRenewalReminderMail` |
+| 3 days before `end_date` | Same template |
 | 1 day before `end_date` | Same template (urgent subject) |
 | After `end_date` (active → past_due) | `TenantSubscriptionExpiredMail` |
 | Grace period elapsed | Status → `expired` |
@@ -358,7 +359,7 @@ Daily scheduler runs `tenants:process-subscriptions` (see `routes/console.php`):
 Optional `.env` overrides:
 
 ```env
-SUBSCRIPTION_RENEWAL_REMINDER_DAYS=7,1
+SUBSCRIPTION_RENEWAL_REMINDER_DAYS=7,3,1
 SUBSCRIPTION_EARLY_RENEW_DAYS=7
 SUBSCRIPTION_PAST_DUE_GRACE_DAYS=7
 ```

@@ -130,13 +130,13 @@
                                             $role = $authSeller?->role ?? $authSeller?->is_seller; // 'front_seller' | 'project_manager' | null
                                             $isFront = $role === 'front_seller';
                                             $canGenerateFirst = false;
-                                            if ($isAdmin) {
-                                                // Admins can always generate links
+                                            if ($isAdmin && ($tenantHasPayments ?? tenantHasPayments())) {
                                                 $canGenerateFirst = true;
                                             } elseif (
                                                 $isFront &&
                                                 $authSeller &&
-                                                (int) $authSeller->brand_id === (int) $lead->brand_id
+                                                (int) $authSeller->brand_id === (int) $lead->brand_id &&
+                                                ($tenantHasPayments ?? tenantHasPayments())
                                             ) {
                                                 // Only front_seller in same brand can generate
                                                 $canGenerateFirst = true;

@@ -106,6 +106,64 @@
                         </a>
                     </li>
                     @endif
+                    @if ($tenantHasUpworkModule ?? false)
+                    <li>
+                        <a class="crm-nav-link {{ $route === 'admin.upwork-clients.get' ? 'active' : '' }}"
+                            href="{{ route('admin.upwork-clients.get') }}">
+                            <i class="bi bi-people"></i><span>Upwork clients</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="crm-nav-link {{ $route === 'admin.upwork-orders.get' ? 'active' : '' }}"
+                            href="{{ route('admin.upwork-orders.get') }}">
+                            <i class="bi bi-briefcase"></i><span>Upwork orders</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="crm-nav-link {{ $route === 'admin.upwork-payments.get' ? 'active' : '' }}"
+                            href="{{ route('admin.upwork-payments.get') }}">
+                            <i class="bi bi-cash-coin"></i><span>Upwork payments</span>
+                        </a>
+                    </li>
+                    @endif
+                    <li>
+                        <a class="crm-nav-link {{ $route === 'admin.org.overview' ? 'active' : '' }}"
+                            href="{{ route('admin.org.overview') }}">
+                            <i class="bi bi-building"></i><span>Organization</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="crm-nav-link {{ $route === 'admin.org.plan' ? 'active' : '' }}"
+                            href="{{ route('admin.org.plan') }}">
+                            <i class="bi bi-grid-3x3-gap"></i><span>Plan &amp; features</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.settings') ? 'active' : '' }}"
+                            href="{{ route('admin.org.settings') }}">
+                            <i class="bi bi-gear"></i><span>Org settings</span>
+                        </a>
+                    </li>
+                    @if (($tenantHasCustomDomain ?? false) || ($tenantHasWhiteLabel ?? false))
+                    <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.domain') ? 'active' : '' }}"
+                            href="{{ route('admin.org.domain') }}">
+                            <i class="bi bi-globe2"></i><span>Domain &amp; brand</span>
+                        </a>
+                    </li>
+                    @endif
+                    <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.audit-logs') ? 'active' : '' }}"
+                            href="{{ route('admin.org.audit-logs') }}">
+                            <i class="bi bi-journal-text"></i><span>Audit log</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.team') ? 'active' : '' }}"
+                            href="{{ route('admin.org.team') }}">
+                            <i class="bi bi-people"></i><span>Team</span>
+                        </a>
+                    </li>
                     <li>
                         <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.billing') ? 'active' : '' }}"
                             href="{{ route('admin.org.billing') }}">
@@ -124,6 +182,14 @@
                             <i class="bi bi-gift"></i><span>Referrals</span>
                         </a>
                     </li>
+                    @if ($tenantHasApiAccess ?? false)
+                    <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.api-tokens') ? 'active' : '' }}"
+                            href="{{ route('admin.org.api-tokens') }}">
+                            <i class="bi bi-key"></i><span>API tokens</span>
+                        </a>
+                    </li>
+                    @endif
                 @else
                     <li>
                         <a class="crm-nav-link {{ in_array($route, ['admin.assigned-leads-orders.get', 'admin.renewed-orders.get']) ? 'active' : '' }}"

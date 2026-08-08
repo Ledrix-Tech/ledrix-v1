@@ -108,7 +108,10 @@ class SellerAuthController extends Controller
                     Auth::guard('seller')->logout();
                     session()->forget(['tenant_id', 'role']);
 
-                    return back()->with('error', 'Your organization subscription is not active. Please contact your administrator.');
+                    return back()->with(
+                        'error',
+                        'Your organization subscription is not active. Ask your administrator to renew billing in Admin → Organization → Billing.'
+                    );
                 }
             }
 

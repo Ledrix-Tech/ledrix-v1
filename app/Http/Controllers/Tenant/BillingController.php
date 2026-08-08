@@ -6,8 +6,10 @@ use App\Http\Controllers\Concerns\ResolvesOrganizationTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Central\TenantInvoice;
 use App\Models\Central\TenantPayment;
+use App\Models\Central\AuditLog;
 use App\Services\Billing\BankTransferQrService;
 use App\Services\Billing\CancelStaleSubscriptionPaymentsService;
+use App\Services\Billing\JazzCashService;
 use App\Services\Billing\PayFastService;
 use App\Services\Billing\ReferralRewardService;
 use App\Services\Billing\SubscriptionPricingService;
@@ -15,6 +17,7 @@ use App\Services\Billing\TenantBillingRegion;
 use App\Services\Billing\TenantStripeCheckoutService;
 use App\Services\Tenant\SubscriptionAccessService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class BillingController extends Controller
@@ -25,6 +28,7 @@ class BillingController extends Controller
         SubscriptionAccessService $accessService,
         SubscriptionPricingService $pricingService,
         PayFastService $payFast,
+        JazzCashService $jazzCash,
         TenantStripeCheckoutService $stripeCheckout,
         CancelStaleSubscriptionPaymentsService $cancelStalePayments,
         BankTransferQrService $qrService,
@@ -83,12 +87,17 @@ class BillingController extends Controller
 
         $stripeConfigured = $stripeCheckout->isConfigured();
         $payfastConfigured = $payFast->isConfigured();
+        $jazzcashConfigured = $jazzCash->isConfigured();
         $meezanConfigured = $pricingService->bankTransferConfigured('PKR');
 
         $stripeReady = $stripeConfigured && ! $isPakistanBuyer;
         $payfastReady = $payfastConfigured && $isPakistanBuyer;
+        $jazzcashReady = $jazzcashConfigured && $isPakistanBuyer;
         $bankTransferReady = $meezanConfigured && $isPakistanBuyer;
-        $hasPaymentOptions = $stripeReady || $payfastReady || $bankTransferReady;
+        $hasPaymentOptions = $stripeReady || $payfastReady || $bankTransferReady || $jazzcashReady;
+        $cancelAtPeriodEnd = $membership
+            && $membership->status === 'active'
+            && $membership->cancelled_at !== null;
 
         $displayAmount = $isPakistanBuyer ? $pricing['pkr'] : $pricing['usd'];
         $billingRegionLabel = TenantBillingRegion::regionLabel($tenant);
@@ -121,6 +130,8 @@ class BillingController extends Controller
             'stripeReady',
             'stripeConfigured',
             'payfastReady',
+            'jazzcashReady',
+            'jazzcashConfigured',
             'bankTransferReady',
             'meezanConfigured',
             'payfastConfigured',
@@ -134,7 +145,75 @@ class BillingController extends Controller
             'bankTransferQrError',
             'billingCredit',
             'pendingReferralDiscount',
+            'cancelAtPeriodEnd',
         ));
+    }
+
+    public function updateAutoRenew(Request $request, SubscriptionAccessService $accessService)
+    {
+        $tenant = $this->organizationTenant();
+        $validated = $request->validate([
+            'auto_renew' => ['required', 'boolean'],
+        ]);
+
+        $tenant->forceFill(['auto_renew' => (bool) $validated['auto_renew']])->save();
+
+        $membership = $accessService->currentMembership($tenant);
+        if ($membership && $validated['auto_renew'] && $membership->cancelled_at) {
+            $membership->forceFill([
+                'cancelled_at'  => null,
+                'cancel_reason' => null,
+            ])->save();
+        }
+
+        $this->auditBilling('tenant.auto_renew_updated', $tenant, [
+            'description' => 'Auto-renew set to '.($validated['auto_renew'] ? 'on' : 'off'),
+            'after'       => ['auto_renew' => (bool) $validated['auto_renew']],
+        ]);
+
+        return $this->organizationRedirect(
+            'billing',
+            [],
+            'success',
+            $validated['auto_renew']
+                ? 'Auto-renew turned on.'
+                : 'Auto-renew turned off. You keep access until the current period ends.'
+        );
+    }
+
+    public function cancelAtPeriodEnd(Request $request, SubscriptionAccessService $accessService)
+    {
+        $tenant = $this->organizationTenant();
+        $membership = $accessService->currentMembership($tenant);
+
+        abort_unless(
+            $membership && $membership->status === 'active' && ! $membership->isExpired(),
+            403,
+            'No active subscription to cancel.'
+        );
+
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $tenant->forceFill(['auto_renew' => false])->save();
+        $membership->forceFill([
+            'cancelled_at'  => now(),
+            'cancel_reason' => $validated['reason'] ?? 'Cancelled at period end by organization admin',
+        ])->save();
+
+        $this->auditBilling('tenant.subscription_cancel_scheduled', $tenant, [
+            'subject_type' => 'tenant_membership',
+            'subject_id'   => $membership->id,
+            'description'  => 'Subscription set to end at period end',
+        ]);
+
+        return $this->organizationRedirect(
+            'billing',
+            [],
+            'success',
+            'Auto-renew cancelled. CRM access continues until '.$membership->end_date?->format('M d, Y').'.'
+        );
     }
 
     public function updateBillingCurrency(Request $request)
@@ -154,5 +233,25 @@ class BillingController extends Controller
             : 'International (USD) — Stripe';
 
         return $this->organizationRedirect('billing', [], 'success', "Billing region updated to {$label}.");
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function auditBilling(string $action, $tenant, array $context = []): void
+    {
+        $actor = Auth::guard('admin')->user() ?? Auth::guard('tenant')->user();
+
+        AuditLog::record(
+            $action,
+            (int) $tenant->id,
+            Auth::guard('admin')->check() ? 'admin' : 'tenant',
+            $actor?->id,
+            $actor?->name ?? $tenant->name,
+            array_merge([
+                'subject_type' => 'tenant',
+                'subject_id'   => $tenant->id,
+            ], $context)
+        );
     }
 }

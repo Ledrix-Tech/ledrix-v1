@@ -26,11 +26,11 @@ class OrderController extends Controller
         if (!$paid) {
             return back()->with('error', 'Cannot mark as finished until payment is received.');
         }
-        $next = (int)! (bool)$lead->is_finish;
+        $next = ! (bool) $lead->is_finish;
         $lead->update([
-            'is_finish'   => $next,
-            'finished_at' => $next ? now() : null,   // if you track timestamp
+            'is_finish' => $next,
         ]);
+
         return back()->with('success', $next ? 'Lead marked as finished.' : 'Lead reopened.');
     }
 

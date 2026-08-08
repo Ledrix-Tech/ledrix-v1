@@ -122,8 +122,8 @@
 
                     <div class="pay-link">
                         @if ($due > 0)
-                            @if (!empty($latestActiveLink))
-                                <a href="{{ $latestActiveLink->last_issued_url ?? route('paylinks.show', $latestActiveLink->token) }}"
+                            @if (!empty($latestActiveLink) && !empty($payUrl))
+                                <a href="{{ $payUrl }}"
                                     class="btn btn-crm-primary w-100" target="_blank" rel="noopener">
                                     Pay {{ number_format(($latestActiveLink->unit_amount ?? 0) / 100, 2) }} {{ $currency }}
                                 </a>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Central;
 use App\Http\Controllers\Controller;
 use App\Models\Central\DemoRequest;
 use App\Models\Central\Tenant;
+use App\Support\MarketingAttribution;
 use App\Support\PlatformOpsNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -70,7 +71,21 @@ class DemoRequestController extends Controller
             'company'     => ['nullable', 'string', 'max:255'],
             'email'       => ['required', 'email', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
+            'source'      => ['nullable', 'string', 'max:64'],
         ]);
+
+        $attribution = MarketingAttribution::summaryLine();
+        $notes = trim((string) ($validated['description'] ?? ''));
+        $source = isset($validated['source']) ? (string) $validated['source'] : '';
+        $landing = MarketingAttribution::landingPath();
+        $metaBits = array_filter([
+            $source !== '' ? 'source='.$source : null,
+            $landing ? 'landing='.$landing : null,
+            $attribution !== '' ? 'attr: '.$attribution : null,
+        ]);
+        if ($metaBits !== []) {
+            $notes = trim($notes.($notes !== '' ? "\n\n" : '').'[Marketing] '.implode(' · ', $metaBits));
+        }
 
         $existing = DemoRequest::query()->where('email', $validated['email'])->first();
 
@@ -79,13 +94,13 @@ class DemoRequestController extends Controller
             $existing->update([
                 'name'        => $validated['name'],
                 'company'     => $validated['company'] ?? $existing->company,
-                'description' => $validated['description'] ?? $existing->description,
+                'description' => $notes !== '' ? $notes : $existing->description,
             ]);
         } else {
             DemoRequest::query()->create([
                 'name'        => $validated['name'],
                 'company'     => $validated['company'] ?? null,
-                'description' => $validated['description'] ?? null,
+                'description' => $notes !== '' ? $notes : null,
                 'email'       => $validated['email'],
                 'status'      => 'pending',
             ]);
@@ -102,9 +117,8 @@ class DemoRequestController extends Controller
             ]
         );
 
-        return back()->with(
-            'success',
-            'Thanks! Your demo request was received. Our team will contact you shortly.'
-        );
+        return redirect()
+            ->route('lp.demo.thanks')
+            ->with('success', 'Thanks! Your demo request was received. Our team will contact you shortly.');
     }
 }

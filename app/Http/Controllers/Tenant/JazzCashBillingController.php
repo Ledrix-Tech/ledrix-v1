@@ -2,31 +2,50 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Http\Controllers\Concerns\ResolvesOrganizationTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Central\TenantPayment;
 use App\Services\Billing\ActivateTenantSubscriptionService;
 use App\Services\Billing\CreateSubscriptionInvoiceService;
 use App\Services\Billing\JazzCashService;
 use App\Services\Billing\PlatformWebhookRecorder;
+use App\Services\Billing\TenantBillingRegion;
 use App\Services\Tenant\SubscriptionAccessService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class JazzCashBillingController extends Controller
 {
+    use ResolvesOrganizationTenant;
+
     public function checkout(
         Request $request,
         CreateSubscriptionInvoiceService $invoiceService,
         JazzCashService $jazzCash,
         SubscriptionAccessService $accessService,
     ) {
-        $tenant = Auth::guard('tenant')->user();
-        $membership = $accessService->currentMembership($tenant);
+        $tenant = $this->organizationTenant();
+        if (! $accessService->canPayOnBilling($tenant)) {
+            return $this->organizationRedirect('billing', [], 'success', 'Your subscription is already active.');
+        }
 
-        if ($membership && $membership->status === 'active' && ! $membership->isExpired()) {
-            return redirect()->route('tenant.billing')->with('success', 'Your subscription is already active.');
+        if (! TenantBillingRegion::isPakistanBuyer($tenant)) {
+            return $this->organizationRedirect(
+                'billing',
+                [],
+                'error',
+                'JazzCash is for Pakistan (PKR) billing. Switch region or use Stripe (USD).'
+            );
+        }
+
+        if (! $jazzCash->isConfigured()) {
+            return $this->organizationRedirect(
+                'billing',
+                [],
+                'error',
+                'JazzCash is not configured. Contact support.'
+            );
         }
 
         $validated = $request->validate([
@@ -41,9 +60,10 @@ class JazzCashBillingController extends Controller
         ]);
 
         try {
-            $result = $invoiceService->createForTenant($tenant, 'jazzcash', 'PKR', 'new');
+            $orderType = $accessService->paymentOrderType($tenant);
+            $result = $invoiceService->createForTenant($tenant, 'jazzcash', 'PKR', $orderType);
         } catch (RuntimeException $e) {
-            return redirect()->route('tenant.billing')->with('error', $e->getMessage());
+            return $this->organizationRedirect('billing', [], 'error', $e->getMessage());
         }
 
         $payment = $result['payment'];
@@ -81,11 +101,7 @@ class JazzCashBillingController extends Controller
         Log::info('JazzCash subscription callback', $response);
 
         if (! $jazzCash->verifyResponseHash($response)) {
-            $redirect = Auth::guard('tenant')->check()
-                ? redirect()->route('tenant.billing')
-                : redirect()->route('tenant.login');
-
-            return $redirect->with('error', 'Invalid JazzCash response signature.');
+            return $this->billingHomeRedirect('error', 'Invalid JazzCash response signature.');
         }
 
         $paymentId = $response['ppmpf_1'] ?? $response['pp_BillReference'] ?? null;
@@ -98,7 +114,7 @@ class JazzCashBillingController extends Controller
             ->first();
 
         if (! $payment) {
-            return redirect()->route('tenant.login')->with('error', 'Payment record not found.');
+            return $this->billingHomeRedirect('error', 'Payment record not found.');
         }
 
         $payment->update([
@@ -120,9 +136,10 @@ class JazzCashBillingController extends Controller
                 fn ($row) => $row->markIgnored(),
             );
 
-            return redirect()
-                ->route('tenant.billing')
-                ->with('error', $response['pp_ResponseMessage'] ?? 'JazzCash payment failed.');
+            return $this->billingHomeRedirect(
+                'error',
+                $response['pp_ResponseMessage'] ?? 'JazzCash payment failed.'
+            );
         }
 
         $tenant = $payment->tenant;
@@ -158,11 +175,9 @@ class JazzCashBillingController extends Controller
                 },
             );
         } catch (RuntimeException $e) {
-            return redirect()->route('tenant.billing')->with('error', $e->getMessage());
+            return $this->billingHomeRedirect('error', $e->getMessage());
         }
 
-        return redirect()
-            ->route('tenant.billing')
-            ->with('success', 'Payment successful! Your subscription is now active.');
+        return $this->billingHomeRedirect('success', 'Payment successful! Your subscription is now active.');
     }
 }

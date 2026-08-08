@@ -24,8 +24,11 @@
                 <div class="col-md-3">
                     <select class="form-select" name="status" aria-label="Filter by status">
                         <option value="">Any status</option>
-                        <option value="paid" @selected(request('status') === 'paid')>Paid</option>
-                        <option value="pending" @selected(request('status') === 'pending')>Pending</option>
+                        @foreach (['draft', 'pending', 'paid', 'in_progress', 'revision', 'completed', 'refunded', 'canceled'] as $statusOption)
+                            <option value="{{ $statusOption }}" @selected(request('status') === $statusOption)>
+                                {{ ucfirst(str_replace('_', ' ', $statusOption)) }}
+                            </option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="col-md-2">

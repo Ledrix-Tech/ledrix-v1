@@ -16,6 +16,14 @@
         };
     @endphp
 
+    {{-- SaaS: announcements + subscription health + plan usage --}}
+    @include('front.pages.tenant.partials.announcements', [
+        'announcements' => $saasAnnouncements ?? [],
+        'dismissRoute'  => 'admin.org.announcements.dismiss',
+    ])
+    @include('admin.partials.subscription-health')
+    @include('admin.partials.usage-limits')
+
     {{-- Hero --}}
     <div class="crm-dash-hero">
         <div class="crm-dash-hero-inner">
@@ -36,6 +44,12 @@
                     <i class="bi bi-lightning-charge"></i>
                     {{ $leads ?? 0 }} leads total
                 </span>
+                @if (! empty($saasPlan?->name))
+                    <span class="crm-dash-hero-chip">
+                        <i class="bi bi-award"></i>
+                        {{ $saasPlan->name }}
+                    </span>
+                @endif
             </div>
         </div>
     </div>

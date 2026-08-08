@@ -14,6 +14,11 @@ return [
     |
     */
 
+    'meta' => [
+        // Prefer config('marketing.meta_pixel_id') in views; kept for callers using services.meta.
+        'pixel_id' => env('META_PIXEL_ID'),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

@@ -3,15 +3,25 @@
 namespace App\Services\Admin;
 
 use App\Models\Brand;
+use App\Models\Central\SystemAnnouncement;
+use App\Models\Central\Tenant;
 use App\Models\Lead;
+use App\Services\Tenant\SubscriptionAccessService;
+use App\Services\Tenant\TenantUsageService;
 use App\Support\TenantContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AdminDashboardService
 {
+    public function __construct(
+        private SubscriptionAccessService $subscriptionAccess,
+        private TenantUsageService $usageService,
+    ) {}
+
     /**
      * Build all data required by the admin dashboard view.
      *
@@ -53,7 +63,7 @@ class AdminDashboardService
 
         $logs = $this->leadViewLogs($brands, $brandId);
 
-        return [
+        return array_merge([
             'leads'             => (int) ($stats->leads ?? 0),
             'orders'            => (int) ($stats->orders ?? 0),
             'payments'          => (int) ($stats->payments ?? 0),
@@ -71,7 +81,79 @@ class AdminDashboardService
             'merchants'         => $merchants,
             'logs'              => $logs,
             'selectedBrandId'   => $brandId,
+        ], $this->saasContext($tenantId));
+    }
+
+    /**
+     * Subscription health, announcements, and plan usage for Admin CRM (A-02–A-04).
+     *
+     * @return array<string, mixed>
+     */
+    private function saasContext(int $tenantId): array
+    {
+        $empty = [
+            'saasTenant'           => null,
+            'saasMembership'       => null,
+            'saasPlan'             => null,
+            'saasUsage'            => null,
+            'saasLimits'           => [],
+            'saasNeedsPayment'     => false,
+            'saasExpiresSoon'      => false,
+            'saasDaysUntilRenewal' => 0,
+            'saasOnTrial'          => false,
+            'saasTrialDaysLeft'    => 0,
+            'saasAnnouncements'    => collect(),
         ];
+
+        try {
+            $tenant = Tenant::query()->with(['plan', 'activeMembership'])->find($tenantId);
+
+            if (! $tenant) {
+                return $empty;
+            }
+
+            $usage = $this->usageService->syncSnapshot($tenantId);
+            $tenant->setRelation('usageSnapshot', $usage);
+
+            $membership = $this->subscriptionAccess->currentMembership($tenant);
+            $plan = $tenant->plan;
+
+            $announcements = SystemAnnouncement::query()
+                ->visible()
+                ->forPlan((string) ($plan?->slug ?? ''))
+                ->latest()
+                ->get()
+                ->filter(fn (SystemAnnouncement $a) => $a->isVisibleToTenant($tenant))
+                ->values();
+
+            return [
+                'saasTenant'           => $tenant,
+                'saasMembership'       => $membership,
+                'saasPlan'             => $plan,
+                'saasUsage'            => $usage,
+                'saasLimits'           => [
+                    'brands'        => $plan?->max_brands,
+                    'sellers'       => $plan?->max_sellers,
+                    'admins'        => $plan?->max_admins,
+                    'clients'       => $plan?->max_clients,
+                    'leads_monthly' => $plan?->max_leads_per_month,
+                    'orders'        => $plan?->max_orders,
+                ],
+                'saasNeedsPayment'     => $this->subscriptionAccess->needsPayment($tenant),
+                'saasExpiresSoon'      => $this->subscriptionAccess->expiresSoon($tenant),
+                'saasDaysUntilRenewal' => $membership?->daysUntilExpiry() ?? 0,
+                'saasOnTrial'          => $tenant->isOnTrial(),
+                'saasTrialDaysLeft'    => $tenant->isOnTrial() ? $tenant->trialDaysLeft() : 0,
+                'saasAnnouncements'    => $announcements,
+            ];
+        } catch (\Throwable $e) {
+            Log::debug('Admin dashboard SaaS context unavailable', [
+                'tenant_id' => $tenantId,
+                'error'     => $e->getMessage(),
+            ]);
+
+            return $empty;
+        }
     }
 
     /**

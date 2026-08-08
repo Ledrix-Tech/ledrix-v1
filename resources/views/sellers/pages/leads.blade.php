@@ -3,6 +3,7 @@
 @section('title', 'Seller | Leads')
 
 @section('sellers-content')
+    @php use Illuminate\Support\Facades\Gate; @endphp
     <div class="crm-page-header">
         <div>
             <h1>Leads</h1>
@@ -64,19 +65,14 @@
                                     $isSeller = auth('seller')->check() && !auth('admin')->check();
                                     $authSeller = auth('seller')->user();
                                     $isAdmin = auth('admin')->check();
-                                    $role = $authSeller?->role ?? $authSeller?->is_seller;
-                                    $isFront = $role === 'front_seller';
                                     $canGenerateFirst = false;
                                     if ($isAdmin) {
                                         $canGenerateFirst = true;
-                                    } elseif (
-                                        $isFront &&
-                                        $authSeller &&
-                                        (int) $authSeller->brand_id === (int) $lead->brand_id
-                                    ) {
+                                    } elseif ($authSeller && Gate::forUser($authSeller)->allows('createPaymentLink', $lead)) {
                                         $canGenerateFirst = true;
                                     }
                                     $canGenerateFirst = $canGenerateFirst && ($tenantHasPayments ?? tenantHasPayments());
+                                    $canFinish = $isAdmin || ($authSeller && Gate::forUser($authSeller)->allows('finish', $lead));
                                     $orderId = $lead->latest_order_id;
                                     $due = (int) ($lead->latest_order_balance_due ?? 0);
                                     $currency = $lead->latest_order_currency ?? 'USD';
@@ -195,6 +191,18 @@
                                                 class="crm-icon-btn info" title="View details">
                                                 <i class="fa fa-eye"></i>
                                             </a>
+                                            @if ($canFinish && $isPaidAll)
+                                                <form method="POST" action="{{ route('seller.lead.finish', $lead) }}"
+                                                    class="d-inline"
+                                                    onsubmit="return confirm('{{ $lead->is_finish ? 'Reopen this lead?' : 'Mark this lead as finished?' }}')">
+                                                    @csrf
+                                                    <button type="submit"
+                                                        class="crm-icon-btn {{ $lead->is_finish ? 'warning' : 'success' }}"
+                                                        title="{{ $lead->is_finish ? 'Reopen lead' : 'Mark finished' }}">
+                                                        <i class="fa {{ $lead->is_finish ? 'fa-undo' : 'fa-check' }}"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
                                             @if (isAdmin())
                                                 <form method="POST" action="{{ route('seller.leads.delete', $lead->id) }}"
                                                     class="d-inline"

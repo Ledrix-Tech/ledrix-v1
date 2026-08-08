@@ -10,7 +10,7 @@
         </div>
         <div class="crm-page-actions">
             <form action="" method="GET" class="crm-search-bar mb-0">
-                <input type="text" placeholder="Search orders..." value="{{ request('search') }}" name="search"
+                <input type="text" placeholder="Search orders..." value="{{ request('q', request('search')) }}" name="q"
                     class="form-control">
                 <button type="submit" class="btn btn-crm-teal"><i class="fa fa-search"></i></button>
             </form>

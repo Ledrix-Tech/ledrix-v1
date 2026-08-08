@@ -14,7 +14,7 @@ Route::middleware('portal.auth')->group(function () {
     Route::post('/user-profile-update', [ProfileController::class, 'updateProfile'])->name('auth.profile.update');
 });
 
-Route::middleware(['admin_or_seller', 'portal.tenant.feature:ppc_module'])->group(function () {
+Route::middleware(['admin_or_seller', 'crm.workspace', 'portal.tenant.feature:ppc_module'])->group(function () {
     Route::post('/lead-update-status', [ManagementController::class, 'updateLeadStatus'])->name('lead.update-status');
     Route::post('/lead-assign', [AdminSellerController::class, 'assignLeadSeller'])->name('lead-assign.post');
     Route::post('/paylink-status', [ManagementController::class, 'changePaylinkStatus'])

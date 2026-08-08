@@ -7,6 +7,10 @@ use App\Http\Controllers\Tenant\CrmAccessController;
 use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\BankTransferBillingController;
 use App\Http\Controllers\Tenant\JazzCashBillingController;
+use App\Http\Controllers\Tenant\OrganizationPlanController;
+use App\Http\Controllers\Tenant\OrganizationSettingsController;
+use App\Http\Controllers\Tenant\OrganizationDomainController;
+use App\Http\Controllers\Tenant\OrganizationAuditLogController;
 use App\Http\Controllers\Tenant\PayFastBillingController;
 use App\Http\Controllers\Tenant\PlatformSupportController;
 use App\Http\Controllers\Tenant\RegistrationController;
@@ -64,6 +68,28 @@ Route::middleware('tenant')->group(function () {
         ->name('tenant.support.reply')
         ->whereNumber('id');
 
+    Route::get('/tenant-profile/plan', [OrganizationPlanController::class, 'index'])
+        ->name('tenant.plan');
+
+    Route::get('/tenant-profile/settings', [OrganizationSettingsController::class, 'edit'])
+        ->name('tenant.settings');
+    Route::put('/tenant-profile/settings', [OrganizationSettingsController::class, 'update'])
+        ->name('tenant.settings.update');
+
+    Route::get('/tenant-profile/audit-logs', [OrganizationAuditLogController::class, 'index'])
+        ->name('tenant.audit-logs');
+
+    Route::middleware('tenant.feature:custom_domain|white_label')->group(function () {
+        Route::get('/tenant-profile/domain', [OrganizationDomainController::class, 'edit'])
+            ->name('tenant.domain');
+        Route::put('/tenant-profile/domain', [OrganizationDomainController::class, 'updateDomain'])
+            ->name('tenant.domain.update');
+        Route::post('/tenant-profile/domain/verify', [OrganizationDomainController::class, 'verifyDomain'])
+            ->name('tenant.domain.verify');
+        Route::post('/tenant-profile/domain/branding', [OrganizationDomainController::class, 'updateBranding'])
+            ->name('tenant.domain.branding');
+    });
+
     Route::get('/tenant-profile/billing', [BillingController::class, 'index'])
         ->name('tenant.billing');
 
@@ -73,6 +99,12 @@ Route::middleware('tenant')->group(function () {
 
     Route::post('/tenant-profile/billing/currency', [BillingController::class, 'updateBillingCurrency'])
         ->name('tenant.billing.currency');
+
+    Route::post('/tenant-profile/billing/auto-renew', [BillingController::class, 'updateAutoRenew'])
+        ->name('tenant.billing.auto-renew');
+
+    Route::post('/tenant-profile/billing/cancel', [BillingController::class, 'cancelAtPeriodEnd'])
+        ->name('tenant.billing.cancel');
 
     Route::get('/tenant-profile/referrals', [TenantReferralController::class, 'index'])
         ->name('tenant.referrals');
@@ -84,6 +116,9 @@ Route::middleware('tenant')->group(function () {
 
     Route::post('/tenant-profile/billing/payfast/checkout', [PayFastBillingController::class, 'checkout'])
         ->name('tenant.billing.payfast.checkout');
+
+    Route::post('/tenant-profile/billing/jazzcash/checkout', [JazzCashBillingController::class, 'checkout'])
+        ->name('tenant.billing.jazzcash.checkout');
 
     Route::post('/tenant-profile/billing/bank-transfer/checkout', [BankTransferBillingController::class, 'checkout'])
         ->name('tenant.billing.bank-transfer.checkout');

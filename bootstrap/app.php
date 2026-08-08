@@ -61,7 +61,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\CheckSectionMaintenance::class,
             \App\Http\Middleware\SetTenantContext::class,
-
+            \App\Http\Middleware\CaptureMarketingAttribution::class,
         ]);
 
         // API group (no session, CSRF)

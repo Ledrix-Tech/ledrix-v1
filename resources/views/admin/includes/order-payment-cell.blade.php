@@ -20,6 +20,7 @@
 
     $canGenerate =
         ($canGenerateAsFront || $canGenerateAsAdmin)
+        && ($tenantHasPayments ?? tenantHasPayments())
         && ! $hasActiveUnusedLink
         && (
             ($due > 0 && $order->status !== 'paid' && ($isRenewalOrder || ! $isPaidOriginal))

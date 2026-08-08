@@ -1,0 +1,163 @@
+/* Slim LP chrome on top of marketing.css (same SaaS look) */
+
+.lp-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+}
+
+.lp-body > main {
+    flex: 1;
+    width: 100%;
+}
+
+.lp-topbar {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
+
+.lp-topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+    gap: 1rem;
+}
+
+.lp-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.lp-brand img {
+    height: 32px;
+    width: auto;
+}
+
+.lp-brand span {
+    font-size: 1.05rem;
+}
+
+.lp-signin {
+    display: inline-flex;
+    align-items: center;
+    color: #4338ca;
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    padding: 0.4rem 0.9rem;
+    background: #eef2ff;
+}
+
+.lp-signin:hover {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.lp-footer {
+    padding: 1.35rem 0;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.88rem;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+}
+
+.lp-footer p {
+    margin: 0;
+}
+
+.lp-footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.1rem;
+    margin-top: 0.4rem !important;
+}
+
+.lp-footer a {
+    color: #4338ca;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.lp-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Demo form lives in contact shell — keep buttons full-width on mobile */
+.lp-page .mkt-contact-form .btn.mkt-btn-primary {
+    background: #4338ca;
+    color: #fff;
+    box-shadow: none;
+}
+
+.lp-page .mkt-contact-form .btn.mkt-btn-primary:hover {
+    background: #3730a3;
+    color: #fff;
+}
+
+.lp-page .mkt-hero-actions {
+    justify-content: center;
+}
+
+.lp-page .mkt-hero-actions .btn {
+    min-width: 11rem;
+}
+
+.lp-thanks-wrap {
+    padding: 5rem 0 4.5rem;
+}
+
+.lp-thanks-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 1.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 2rem;
+}
+
+.lp-page .mkt-btn-secondary {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 0.72rem 1.4rem;
+}
+
+.lp-page .mkt-btn-secondary:hover {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+@media (max-width: 575.98px) {
+    .lp-page .mkt-hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lp-page .mkt-hero-actions .btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .lp-brand span {
+        display: none;
+    }
+}

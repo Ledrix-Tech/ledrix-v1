@@ -11,7 +11,7 @@ return [
     | threshold while the membership is still active and not yet expired.
     |
     */
-    'renewal_reminder_days' => array_map('intval', explode(',', env('SUBSCRIPTION_RENEWAL_REMINDER_DAYS', '7,1'))),
+    'renewal_reminder_days' => array_map('intval', explode(',', env('SUBSCRIPTION_RENEWAL_REMINDER_DAYS', '7,3,1'))),
 
     /*
     |--------------------------------------------------------------------------

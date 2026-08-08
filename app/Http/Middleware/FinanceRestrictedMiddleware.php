@@ -16,6 +16,9 @@ class FinanceRestrictedMiddleware
         'admin.logout',
         'auth.profile.get',
         'auth.profile.update',
+        'admin.2fa.setup',
+        'admin.2fa.enable',
+        'admin.2fa.disable',
     ];
 
     public function handle(Request $request, Closure $next): Response

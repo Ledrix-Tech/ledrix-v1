@@ -42,7 +42,8 @@ class PayPalPaymentController extends Controller
         $paypalOrderId = $request->query('token');
         $gateway = $factory->forProviderWithBrand('paypal', $brand);
         $gateway->handleCheckoutSuccess($link, $paypalOrderId);
-        return redirect()->route('paid-success', $token);
+
+        return redirect()->route('paylinks.success', $token);
     }
 
     /** Optional thank-you page (you already have) */

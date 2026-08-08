@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\API\Client;
 
-use App\Models\Lead;
 use App\Models\Order;
 use App\Models\ProfileDetail;
 use App\Support\ClientPortalAuthorization;
@@ -17,38 +16,30 @@ class PagesController extends Controller
     {
         $client = auth('client')->user();
 
-        // All possible lead statuses (enum list)
         $statuses = [
-            'new',
-            'contacted',
-            'qualified',
-            'proposal_sent',
-            'first_paid',
+            'draft',
+            'pending',
+            'paid',
             'in_progress',
+            'revision',
             'completed',
-            'renewal_due',
-            'on_hold',
-            'disqualified',
-            'cancelled',
+            'refunded',
+            'canceled',
         ];
 
-        // Count leads grouped by status for this client
-        $counts = Lead::where('client_id', $client->id)
+        $counts = Order::query()
+            ->where('client_id', $client->id)
             ->select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status')
             ->toArray();
 
-        // Prepare chart data ensuring all statuses exist
         $chartData = collect($statuses)->map(function ($status) use ($counts) {
             return [
                 'status' => ucfirst(str_replace('_', ' ', $status)),
-                'count' => $counts[$status] ?? 0,
+                'count' => (int) ($counts[$status] ?? 0),
             ];
         });
-
-        // Quick debug check (uncomment if chart blank)
-        // dd($chartData->toArray());
 
         return view('clients.pages.dashboard', compact('client', 'chartData'));
     }
@@ -80,10 +71,10 @@ class PagesController extends Controller
         }
 
         if ($request->filled('status')) {
-            if ($request->status === 'paid') {
-                $query->where('status', 'paid');
-            } elseif ($request->status === 'pending') {
-                $query->where('status', '!=', 'paid');
+            $status = (string) $request->status;
+            $allowed = ['draft', 'pending', 'paid', 'in_progress', 'revision', 'completed', 'refunded', 'canceled'];
+            if (in_array($status, $allowed, true)) {
+                $query->where('status', $status);
             }
         }
 
@@ -101,13 +92,14 @@ class PagesController extends Controller
             'brand:id,brand_name',
             'seller:id,name',
             'client:id,name,email',
-            'paymentLinks:id,order_id,unit_amount,status,paid_at,token,last_issued_url',
+            'paymentLinks:id,order_id,unit_amount,status,paid_at,token,last_issued_url,last_issued_at,expires_at,is_active_link,currency',
             'payments:id,order_id,amount,currency,status,created_at',
         ]);
 
-        // latest ACTIVE (unpaid + not expired) link for THIS order
+        // Must match checkout: is_active_link + unpaid + not expired (PaymentLink::isActiveLink).
         $latestActiveLink = $order->paymentLinks()
-            ->where('status', 'active')
+            ->where('is_active_link', true)
+            ->where('status', '!=', 'paid')
             ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
             })
@@ -115,18 +107,16 @@ class PagesController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        // dd($order, $lastLink, $outstandingUrl);
-        // return response()->json([
-        //     'status'  => true,
-        //     'message' => 'Client orders fetched successfully',
-        //     'data'    => [
-        //         'order' => $order,
-        //         'client' => $client,
-        //         'lastActiveLink' => $latestActiveLink
-        //     ],
-        // ]);
+        $payUrl = null;
+        if ($latestActiveLink && $latestActiveLink->isActiveLink()) {
+            $payUrl = filled($latestActiveLink->last_issued_url)
+                ? $latestActiveLink->last_issued_url
+                : $latestActiveLink->signedUrl();
+        } else {
+            $latestActiveLink = null;
+        }
 
-        return view('clients.pages.invoice-details', compact('order', 'client', 'latestActiveLink'));
+        return view('clients.pages.invoice-details', compact('order', 'client', 'latestActiveLink', 'payUrl'));
     }
 
     public function clientProfile()

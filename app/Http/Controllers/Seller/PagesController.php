@@ -134,7 +134,7 @@ class PagesController extends Controller
     /**
      * Seller Clients
      */
-    public function sellerClients()
+    public function sellerClients(Request $request)
     {
         $seller = auth('seller')->user();
         abort_unless($seller, 403, 'Unauthorized access.');
@@ -157,7 +157,16 @@ class PagesController extends Controller
             });
         }
 
-        $clients = $clientsQuery->paginate(20);
+        $search = trim((string) ($request->input('q') ?: $request->input('search') ?: ''));
+        if ($search !== '') {
+            $clientsQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        $clients = $clientsQuery->paginate(20)->withQueryString();
 
         $riskyClients = RiskyClient::with([
             'client:id,name,email',

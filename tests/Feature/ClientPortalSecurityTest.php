@@ -122,6 +122,110 @@ class ClientPortalSecurityTest extends TestCase
             ->assertOk();
     }
 
+    public function test_client_invoice_hides_pay_when_link_toggled_off(): void
+    {
+        $client = $this->createPortalClient();
+
+        ['brand' => $brand, 'seller' => $seller, 'lead' => $lead] = $this->createPaymentLeadGraph([
+            'lead' => ['client_id' => $client->id],
+        ]);
+
+        $order = Order::create([
+            'tenant_id'       => 1,
+            'lead_id'         => $lead->id,
+            'brand_id'        => $brand->id,
+            'seller_id'       => $seller->id,
+            'front_seller_id' => $seller->id,
+            'owner_seller_id' => $seller->id,
+            'client_id'       => $client->id,
+            'service_name'    => 'Logo Design',
+            'currency'        => 'USD',
+            'unit_amount'     => 10_000,
+            'amount_paid'     => 0,
+            'balance_due'     => 10_000,
+            'status'          => 'pending',
+            'order_type'      => 'original',
+        ]);
+
+        \App\Models\PaymentLink::create([
+            'tenant_id'        => 1,
+            'lead_id'          => $lead->id,
+            'brand_id'         => $brand->id,
+            'client_id'        => $client->id,
+            'seller_id'        => $seller->id,
+            'order_id'         => $order->id,
+            'token'            => (string) \Illuminate\Support\Str::uuid(),
+            'unit_amount'      => 10_000,
+            'currency'         => 'USD',
+            'service_name'     => 'Logo Design',
+            'status'           => 'active',
+            'is_active_link'   => false,
+            'last_issued_url'  => 'https://example.test/signed-pay',
+            'last_issued_at'   => now(),
+            'expires_at'       => now()->addDays(7),
+            'provider'         => 'stripe',
+        ]);
+
+        $this->actingAs($client, 'client')
+            ->get(route('client.invoice.details', $order))
+            ->assertOk()
+            ->assertSee('no active payment link', false)
+            ->assertDontSee('https://example.test/signed-pay', false);
+    }
+
+    public function test_client_invoice_shows_signed_pay_url_for_active_link(): void
+    {
+        $client = $this->createPortalClient();
+
+        ['brand' => $brand, 'seller' => $seller, 'lead' => $lead] = $this->createPaymentLeadGraph([
+            'lead' => ['client_id' => $client->id],
+        ]);
+
+        $order = Order::create([
+            'tenant_id'       => 1,
+            'lead_id'         => $lead->id,
+            'brand_id'        => $brand->id,
+            'seller_id'       => $seller->id,
+            'front_seller_id' => $seller->id,
+            'owner_seller_id' => $seller->id,
+            'client_id'       => $client->id,
+            'service_name'    => 'Logo Design',
+            'currency'        => 'USD',
+            'unit_amount'     => 10_000,
+            'amount_paid'     => 0,
+            'balance_due'     => 10_000,
+            'status'          => 'pending',
+            'order_type'      => 'original',
+        ]);
+
+        $link = \App\Models\PaymentLink::create([
+            'tenant_id'       => 1,
+            'lead_id'         => $lead->id,
+            'brand_id'        => $brand->id,
+            'client_id'       => $client->id,
+            'seller_id'       => $seller->id,
+            'order_id'        => $order->id,
+            'token'           => (string) \Illuminate\Support\Str::uuid(),
+            'unit_amount'     => 10_000,
+            'currency'        => 'USD',
+            'service_name'    => 'Logo Design',
+            'status'          => 'active',
+            'is_active_link'  => true,
+            'last_issued_url' => null,
+            'last_issued_at'  => now(),
+            'expires_at'      => now()->addDays(7),
+            'provider'        => 'stripe',
+        ]);
+
+        $response = $this->actingAs($client, 'client')
+            ->get(route('client.invoice.details', $order))
+            ->assertOk()
+            ->assertSee('Pay 100.00 USD', false);
+
+        $this->assertStringContainsString('signature=', $response->getContent());
+        $this->assertStringContainsString($link->token, $response->getContent());
+    }
+
     public function test_client_tickets_list_is_scoped_to_authenticated_client(): void
     {
         $client = $this->createPortalClient();

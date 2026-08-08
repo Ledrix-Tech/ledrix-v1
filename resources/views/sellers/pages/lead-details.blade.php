@@ -99,6 +99,39 @@
                             <div class="alert alert-warning">No extra data available.</div>
                         @endif
 
+                        <hr>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <a href="{{ route('seller.leads.get') }}" class="btn btn-outline-secondary btn-sm">
+                                &larr; Back to leads
+                            </a>
+                            @php
+                                $actor = auth('seller')->user();
+                                $canFinishDetail = auth('admin')->check()
+                                    || ($actor && \Illuminate\Support\Facades\Gate::forUser($actor)->allows('finish', $lead));
+                                $canPaylink = auth('admin')->check()
+                                    || ($actor && \Illuminate\Support\Facades\Gate::forUser($actor)->allows('createPaymentLink', $lead));
+                                $hasPaid = $lead->paymentLinks()->where('status', 'paid')->exists()
+                                    || optional($lead->client)->orders()->where('status', 'paid')->exists();
+                            @endphp
+                            @if ($canPaylink && ($tenantHasPayments ?? tenantHasPayments()))
+                                <a href="{{ route('generate-link-form', ['brand' => $lead->brand_id, 'lead' => $lead->id]) }}"
+                                    class="btn btn-primary btn-sm">
+                                    <i class="bi bi-link-45deg"></i> Generate payment link
+                                </a>
+                            @endif
+                            @if ($canFinishDetail && $hasPaid)
+                                <form method="POST" action="{{ route('seller.lead.finish', $lead) }}" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm {{ $lead->is_finish ? 'btn-outline-warning' : 'btn-outline-success' }}">
+                                        {{ $lead->is_finish ? 'Reopen lead' : 'Mark finished' }}
+                                    </button>
+                                </form>
+                            @endif
+                            @if ($lead->is_finish)
+                                <span class="badge bg-success">Finished</span>
+                            @endif
+                        </div>
+
                     </div>
                 </div>
             </div>

@@ -121,10 +121,14 @@
                                 </td>
                                 <td data-label="Order">
                                     @if ($order)
-                                        <a href="{{ route('admin.order-tickets.get', $order) }}"
-                                            class="fw-semibold text-decoration-none">
-                                            #{{ $order->id }}
-                                        </a>
+                                        @if ($tenantHasSupportTickets ?? false)
+                                            <a href="{{ route('admin.order-tickets.get', $order) }}"
+                                                class="fw-semibold text-decoration-none">
+                                                #{{ $order->id }}
+                                            </a>
+                                        @else
+                                            <span class="fw-semibold">#{{ $order->id }}</span>
+                                        @endif
                                         @if ($order->order_type === 'renewal')
                                             <span class="crm-status crm-status-neutral ms-1">Renewal</span>
                                         @endif

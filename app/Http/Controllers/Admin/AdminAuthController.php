@@ -57,6 +57,16 @@ class AdminAuthController extends Controller
 
         if ($admin) {
             RateLimiter::clear($throttleKey);
+
+            if ($admin->two_factor_secret) {
+                session([
+                    'admin_2fa_pending_id' => $admin->id,
+                    'admin_2fa_remember'  => false,
+                ]);
+
+                return redirect()->route('admin.2fa.challenge');
+            }
+
             Auth::guard('admin')->login($admin);
             $request->session()->regenerate();
 

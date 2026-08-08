@@ -88,6 +88,7 @@ return [
         '/billing',
         '/pay/',
         '/api/',
+        '/lp',
     ],
 
     'faq' => [

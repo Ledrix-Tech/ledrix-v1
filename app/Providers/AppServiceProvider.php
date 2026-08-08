@@ -73,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('tenantHasDualInvoicing', tenantFeature('dual_invoicing'));
             $view->with('tenantHasSellerLeaderboard', tenantFeature('seller_leaderboard'));
             $view->with('tenantHasWhiteLabel', tenantFeature('white_label'));
+            $view->with('tenantHasCustomDomain', tenantFeature('custom_domain'));
             $view->with('tenantHasUpworkModule', tenantFeature('upwork_module'));
         });
 
@@ -90,6 +91,14 @@ class AppServiceProvider extends ServiceProvider
             $view->with('tenantHasDualInvoicing', tenantFeature('dual_invoicing'));
             $view->with('tenantHasUpworkModule', tenantFeature('upwork_module'));
             $view->with('tenantHasWhiteLabel', tenantFeature('white_label'));
+            $view->with('tenantHasCustomDomain', tenantFeature('custom_domain'));
+
+            $tenantId = \App\Support\TenantContext::resolve();
+            $logo = null;
+            if ($tenantId) {
+                $logo = \App\Models\Central\Tenant::query()->whereKey($tenantId)->value('logo');
+            }
+            $view->with('tenantBrandLogo', $logo);
         });
 
         // dynamic route prfix changed

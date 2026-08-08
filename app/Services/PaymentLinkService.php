@@ -219,9 +219,19 @@ class PaymentLinkService
 
     private function resolveAttributionSellers(Lead $lead): array
     {
-        $assignment     = LeadAssignment::where('lead_id', $lead->id)->latest('assigned_at')->first();
-        $frontSellerId  = (int)($assignment?->assigned_by ?: $lead->getOriginal('seller_id'));
-        $currentOwnerId = (int)($assignment?->assigned_to ?: $lead->seller_id);
+        $assignment = LeadAssignment::where('lead_id', $lead->id)->latest('assigned_at')->first();
+
+        // Prefer the lead's owning front seller — never treat an Admin id as a seller id.
+        $frontSellerId = (int) ($lead->seller_id ?: $lead->getOriginal('seller_id'));
+        if (
+            $assignment
+            && ($assignment->assigned_role ?? null) === 'front_seller'
+            && (int) $assignment->assigned_by > 0
+        ) {
+            $frontSellerId = (int) $assignment->assigned_by;
+        }
+
+        $currentOwnerId = (int) ($assignment?->assigned_to ?: $lead->seller_id);
 
         abort_unless($frontSellerId > 0, 422, 'Front seller not resolved.');
         abort_unless($currentOwnerId > 0, 422, 'Owner seller not resolved.');

@@ -75,3 +75,7 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    @include('front.includes.analytics-conversion', ['event' => 'CompleteRegistration'])
+@endpush

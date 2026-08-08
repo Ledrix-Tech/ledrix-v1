@@ -23,8 +23,9 @@ class SellerOrderController extends Controller
         $query = Order::with([
             'brand:id,brand_name',
             'client:id,name,email',
+            'lead:id,brand_id,seller_id',
             'seller:id,name,email,sudo_name,brand_id',
-            'latestPaymentLink:id,order_id,is_active_link,last_issued_url'
+            'latestPaymentLink:id,order_id,is_active_link,last_issued_url,status'
         ]);
 
         // --- Visibility rules ---
@@ -42,16 +43,17 @@ class SellerOrderController extends Controller
         }
 
         // --- Filters ---
+        $search = trim((string) ($request->input('q') ?: $request->input('search') ?: ''));
+
         $query
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('brand_id'), fn($q) => $q->where('brand_id', (int) $request->brand_id))
-            ->when($request->filled('q'), function ($q) use ($request) {
-                $term = trim($request->q);
+            ->when($search !== '', function ($q) use ($search) {
                 $q->where(
                     fn($w) =>
-                    $w->where('service_name', 'like', "%{$term}%")
-                        ->orWhere('buyer_name', 'like', "%{$term}%")
-                        ->orWhere('buyer_email', 'like', "%{$term}%")
+                    $w->where('service_name', 'like', "%{$search}%")
+                        ->orWhere('buyer_name', 'like', "%{$search}%")
+                        ->orWhere('buyer_email', 'like', "%{$search}%")
                 );
             });
 
@@ -88,6 +90,15 @@ class SellerOrderController extends Controller
             'latestPaymentLink:id,order_id,is_active_link,last_issued_url',
         ])
             ->where('parent_order_id', $order->id)
+            ->when(trim((string) ($request->input('q') ?: $request->input('search') ?: '')) !== '', function ($q) use ($request) {
+                $term = trim((string) ($request->input('q') ?: $request->input('search')));
+                $q->where(function ($w) use ($term) {
+                    $w->where('service_name', 'like', "%{$term}%")
+                        ->orWhere('buyer_name', 'like', "%{$term}%")
+                        ->orWhere('buyer_email', 'like', "%{$term}%")
+                        ->orWhere('status', 'like', "%{$term}%");
+                });
+            })
             ->orderByDesc('created_at')
             ->get();
 
@@ -178,8 +189,8 @@ class SellerOrderController extends Controller
             $query->where('brand_id', (int)$request->brand_id);
         }
 
-        if ($request->filled('q')) {
-            $term = trim($request->q);
+        if ($request->filled('q') || $request->filled('search')) {
+            $term = trim((string) ($request->input('q') ?: $request->input('search')));
             $query->where(function ($w) use ($term) {
                 $w->where('service_name', 'like', "%{$term}%")
                     ->orWhere('buyer_name', 'like', "%{$term}%")

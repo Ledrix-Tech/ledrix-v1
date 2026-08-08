@@ -124,6 +124,68 @@
                                         <span class="billing-stat__value">{{ $membership->end_date->format('M d, Y') }}</span>
                                     </div>
                                 @endif
+
+                                @php
+                                    $jazzcashAutoRenewAvailable = ($jazzcashConfigured ?? false)
+                                        && ($isPakistanBuyer ?? false);
+                                @endphp
+
+                                <div class="billing-stat">
+                                    <span class="billing-stat__label">Auto-renew</span>
+                                    <span class="billing-stat__value">
+                                        @if ($cancelAtPeriodEnd ?? false)
+                                            <span class="badge bg-warning text-dark">Cancels at period end</span>
+                                        @elseif ($jazzcashAutoRenewAvailable && $tenant->auto_renew)
+                                            <span class="badge bg-success">On (JazzCash)</span>
+                                        @elseif ($jazzcashAutoRenewAvailable)
+                                            <span class="badge bg-secondary">Off</span>
+                                        @else
+                                            <span class="badge bg-secondary">Manual renew</span>
+                                        @endif
+                                    </span>
+                                </div>
+
+                                <div class="mt-3 d-flex flex-wrap gap-2">
+                                    <a href="{{ org_route('plan') }}" class="btn btn-sm btn-outline-secondary">View plan features</a>
+                                    <a href="{{ route('pricing.get') }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">Upgrade / compare</a>
+                                    <a href="{{ org_route('support.create') }}" class="btn btn-sm btn-outline-secondary">Request upgrade</a>
+                                </div>
+
+                                @if ($membership && $membership->status === 'active' && ! $membership->isExpired())
+                                    <hr class="my-3">
+                                    @if ($jazzcashAutoRenewAvailable)
+                                        <p class="small text-muted mb-2">
+                                            JazzCash can charge your saved token automatically before expiry.
+                                        </p>
+                                        <form method="POST" action="{{ org_route('billing.auto-renew') }}" class="mb-3">
+                                            @csrf
+                                            <input type="hidden" name="auto_renew" value="{{ $tenant->auto_renew ? '0' : '1' }}">
+                                            <button type="submit" class="btn btn-sm {{ $tenant->auto_renew ? 'btn-outline-secondary' : 'btn-outline-success' }}">
+                                                {{ $tenant->auto_renew ? 'Turn auto-renew off' : 'Turn auto-renew on' }}
+                                            </button>
+                                        </form>
+                                    @else
+                                        <p class="small text-muted mb-3">
+                                            @if ($isPakistanBuyer ?? false)
+                                                Meezan bank transfer renewals are manual — pay from Billing before expiry (reminder emails at 7, 3, and 1 day).
+                                            @else
+                                                Card renewals are manual for now — renew from Billing before expiry (reminder emails at 7, 3, and 1 day).
+                                            @endif
+                                        </p>
+                                    @endif
+
+                                    @unless ($cancelAtPeriodEnd ?? false)
+                                        <form method="POST" action="{{ org_route('billing.cancel') }}"
+                                            onsubmit="return confirm('End this subscription at period end? You keep CRM access until then.');">
+                                            @csrf
+                                            <div class="mb-2">
+                                                <label class="form-label small text-muted" for="cancel_reason">Cancel reason (optional)</label>
+                                                <input id="cancel_reason" type="text" name="reason" class="form-control form-control-sm" maxlength="500">
+                                            </div>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancel at period end</button>
+                                        </form>
+                                    @endunless
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -250,6 +312,31 @@
                                         </div>
                                     @endif
 
+                                    @if ($jazzcashReady)
+                                        <div class="billing-pay-box mb-3">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <i class="bi bi-phone fs-4 text-primary"></i>
+                                                <strong>Pay with JazzCash</strong>
+                                                <span class="badge bg-success-subtle text-success-emphasis ms-auto">Instant · PKR</span>
+                                            </div>
+                                            <p class="text-muted small mb-3">
+                                                JazzCash wallet / cards — PKR {{ number_format($pricing['pkr'], 0) }}. Activates automatically.
+                                            </p>
+                                            <form method="POST" action="{{ org_route('billing.jazzcash.checkout') }}">
+                                                @csrf
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="checkbox" name="auto_renew" value="1" id="jazzcash_auto_renew">
+                                                    <label class="form-check-label small" for="jazzcash_auto_renew">
+                                                        Enable auto-renew (tokenized)
+                                                    </label>
+                                                </div>
+                                                <button type="submit" class="btn btn-outline-primary btn-lg w-100">
+                                                    Pay with JazzCash (PKR)
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @endif
+
                                     @if ($payfastReady)
                                         <div class="billing-pay-box mb-0">
                                             <div class="d-flex align-items-center gap-2 mb-2">
@@ -274,7 +361,7 @@
                                             <strong>No payment method available for {{ $billingRegionLabel }}.</strong>
                                             <p class="small mb-0 mt-2">
                                                 @if ($isPakistanBuyer)
-                                                    Enable Meezan (or PayFast) in Super Admin → Payment Accounts, or switch to International USD.
+                                                    Enable Meezan, JazzCash, or PayFast in Super Admin → Payment Accounts, or switch to International USD.
                                                 @else
                                                     Enable Stripe in Super Admin → Payment Accounts, or switch to Pakistan PKR.
                                                 @endif

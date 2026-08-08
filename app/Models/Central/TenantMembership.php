@@ -31,6 +31,7 @@ class TenantMembership extends Model
         'renewed_by',
         'trial_reminder_sent_at',
         'renewal_reminder_7d_sent_at',
+        'renewal_reminder_3d_sent_at',
         'renewal_reminder_1d_sent_at',
         'renewal_expired_notice_sent_at',
         'conversion_source',
@@ -46,6 +47,7 @@ class TenantMembership extends Model
         'cancelled_at'                  => 'datetime',
         'trial_reminder_sent_at'        => 'datetime',
         'renewal_reminder_7d_sent_at'   => 'datetime',
+        'renewal_reminder_3d_sent_at'   => 'datetime',
         'renewal_reminder_1d_sent_at'   => 'datetime',
         'renewal_expired_notice_sent_at'=> 'datetime',
         'amount'                        => 'decimal:2',
@@ -130,6 +132,7 @@ class TenantMembership extends Model
     {
         $this->update([
             'renewal_reminder_7d_sent_at'    => null,
+            'renewal_reminder_3d_sent_at'    => null,
             'renewal_reminder_1d_sent_at'    => null,
             'renewal_expired_notice_sent_at' => null,
         ]);

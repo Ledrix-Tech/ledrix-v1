@@ -10,6 +10,7 @@ use App\Models\Central\Tenant;
 use App\Models\Central\TenantEmailVerification;
 use App\Models\Central\TenantMembership;
 use App\Models\Central\TenantUsageSnapshot;
+use App\Support\MarketingAttribution;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -60,11 +61,15 @@ class RegisterTenantService
                 'trial_ends_at'   => $trialEndsAt,
                 'status'          => 'inactive',
                 'registered_ip'   => request()->ip(),
-                'meta'            => [
-                    'registered_from' => 'website',
+                'meta'            => array_filter([
+                    'registered_from' => MarketingAttribution::landingPath() ? 'paid_landing' : 'website',
                     'billing_cycle'   => $billingCycle,
-                ],
+                    'landing_path'    => MarketingAttribution::landingPath(),
+                    'attribution'     => MarketingAttribution::all() ?: null,
+                ], fn ($value) => $value !== null && $value !== []),
             ]);
+
+            $attribution = MarketingAttribution::all();
 
             TenantMembership::create([
                 'tenant_id'    => $tenant->id,
@@ -79,10 +84,13 @@ class RegisterTenantService
                 'trial_end'    => $trialEndsAt->toDateString(),
                 'status'       => 'trialing',
                 'renewed_by'   => 'tenant',
-                'conversion_source' => 'registration',
-                'meta'         => [
-                    'trial_days' => $trialDays,
-                ],
+                'conversion_source' => ($attribution['utm_source'] ?? null)
+                    ? 'paid_'.$attribution['utm_source']
+                    : 'registration',
+                'meta'         => array_filter([
+                    'trial_days'  => $trialDays,
+                    'attribution' => $attribution ?: null,
+                ], fn ($value) => $value !== null && $value !== []),
             ]);
 
             TenantUsageSnapshot::create([

@@ -94,26 +94,12 @@
                                 </td>
                                 <td data-label="Actions" class="text-end">
                                     <div class="crm-order-actions">
-                                        @can('refund', $order)
-                                            <form action="" method="POST" class="d-inline">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-crm-outline text-danger">
-                                                    <i class="bi bi-arrow-counterclockwise"></i> Refund
-                                                </button>
-                                            </form>
-                                        @endcan
-                                        @can('cancel', $order)
-                                            <form action="" method="POST" class="d-inline">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-crm-outline">
-                                                    <i class="bi bi-x-circle"></i> Cancel
-                                                </button>
-                                            </form>
-                                        @endcan
-                                        <a href="{{ route('order.generate-invoice', $order) }}"
-                                            class="btn btn-sm btn-crm-outline" title="Invoice">
-                                            <i class="fa fa-file-text-o"></i> Invoice
-                                        </a>
+                                        @if ($tenantHasDualInvoicing ?? false)
+                                            <a href="{{ route('order.generate-invoice', $order) }}"
+                                                class="btn btn-sm btn-crm-outline" title="Invoice">
+                                                <i class="fa fa-file-text-o"></i> Invoice
+                                            </a>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

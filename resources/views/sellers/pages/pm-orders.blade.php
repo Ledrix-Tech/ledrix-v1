@@ -140,24 +140,28 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if ($order->latestPaymentLink->is_active_link)
-                                            <a href="javascript:void(0);" class="badge badge-success btn-sm togglePaylink"
-                                                data-toggle="tooltip" data-id="{{ $order->latestPaymentLink->id }}"
-                                                data-status="false">
-                                                Active
-                                            </a>
-                                            @if ($order->latestPaymentLink->last_issued_url)
-                                                <button type="button" class="badge btn-outline-info copyBtn"
-                                                    data-url="{{ $order->latestPaymentLink->last_issued_url }}">
-                                                    Copy
-                                                </button>
+                                        @if ($order->latestPaymentLink)
+                                            @if ($order->latestPaymentLink->is_active_link)
+                                                <a href="javascript:void(0);" class="badge badge-success btn-sm togglePaylink"
+                                                    data-toggle="tooltip" data-id="{{ $order->latestPaymentLink->id }}"
+                                                    data-status="false">
+                                                    Active
+                                                </a>
+                                                @if ($order->latestPaymentLink->last_issued_url)
+                                                    <button type="button" class="badge btn-outline-info copyBtn"
+                                                        data-url="{{ $order->latestPaymentLink->last_issued_url }}">
+                                                        Copy
+                                                    </button>
+                                                @endif
+                                            @else
+                                                <a href="javascript:void(0);" class="badge badge-danger btn-sm togglePaylink"
+                                                    data-toggle="tooltip" data-id="{{ $order->latestPaymentLink->id }}"
+                                                    data-status="true">
+                                                    Inactive
+                                                </a>
                                             @endif
                                         @else
-                                            <a href="javascript:void(0);" class="badge badge-danger btn-sm togglePaylink"
-                                                data-toggle="tooltip" data-id="{{ $order->latestPaymentLink->id }}"
-                                                data-status="true">
-                                                Inactive
-                                            </a>
+                                            <span class="text-muted">—</span>
                                         @endif
                                     </td>
                                 </tr>

@@ -20,6 +20,13 @@
         $dueCents = (int) ($isOrder ? $order->balance_due ?? 0 : 0);
         $payNowDefault = $isOrder ? number_format($dueCents / 100, 2, '.', '') : old('payable_amount');
         $selectedProvider = old('provider', '');
+        $hasStripe = $tenantHasStripe ?? tenantFeature('stripe');
+        $hasPayPal = $tenantHasPayPal ?? tenantFeature('paypal');
+        if ($selectedProvider === '' && $hasStripe && ! $hasPayPal) {
+            $selectedProvider = 'stripe';
+        } elseif ($selectedProvider === '' && ! $hasStripe && $hasPayPal) {
+            $selectedProvider = 'paypal';
+        }
         $hasMilestones = app(\App\Services\Tenant\TenantFeatureService::class)
             ->enabled('milestone_payments', (int) ($brand->tenant_id ?? 0) ?: null);
     @endphp
@@ -124,40 +131,50 @@
                         <div class="crm-paylink-section-title">
                             <i class="bi bi-credit-card"></i> Payment method
                         </div>
-                        <div class="crm-paylink-provider mb-3">
-                            <label class="crm-paylink-provider-option">
-                                <input type="radio" name="provider" value="stripe" required
-                                    @checked($selectedProvider === 'stripe')>
-                                <span class="crm-paylink-provider-card">
-                                    <span class="crm-paylink-provider-icon crm-paylink-provider-icon--stripe">
-                                        <i class="fa fa-cc-stripe"></i>
-                                    </span>
-                                    <span>
-                                        <span class="crm-paylink-provider-name">Stripe</span>
-                                        <span class="crm-paylink-provider-desc d-block">Card payments</span>
-                                    </span>
-                                </span>
-                            </label>
-                            <label class="crm-paylink-provider-option">
-                                <input type="radio" name="provider" value="paypal" required
-                                    @checked($selectedProvider === 'paypal')>
-                                <span class="crm-paylink-provider-card">
-                                    <span class="crm-paylink-provider-icon crm-paylink-provider-icon--paypal">
-                                        <i class="fa fa-cc-paypal"></i>
-                                    </span>
-                                    <span>
-                                        <span class="crm-paylink-provider-name">PayPal</span>
-                                        <span class="crm-paylink-provider-desc d-block">PayPal checkout</span>
-                                    </span>
-                                </span>
-                            </label>
-                        </div>
+                        @if (! $hasStripe && ! $hasPayPal)
+                            <div class="alert alert-warning mb-0">
+                                No payment providers are enabled for this plan. Enable Stripe and/or PayPal in Super Admin.
+                            </div>
+                        @else
+                            <div class="crm-paylink-provider mb-3">
+                                @if ($hasStripe)
+                                    <label class="crm-paylink-provider-option">
+                                        <input type="radio" name="provider" value="stripe" required
+                                            @checked($selectedProvider === 'stripe')>
+                                        <span class="crm-paylink-provider-card">
+                                            <span class="crm-paylink-provider-icon crm-paylink-provider-icon--stripe">
+                                                <i class="fa fa-cc-stripe"></i>
+                                            </span>
+                                            <span>
+                                                <span class="crm-paylink-provider-name">Stripe</span>
+                                                <span class="crm-paylink-provider-desc d-block">Card payments</span>
+                                            </span>
+                                        </span>
+                                    </label>
+                                @endif
+                                @if ($hasPayPal)
+                                    <label class="crm-paylink-provider-option">
+                                        <input type="radio" name="provider" value="paypal" required
+                                            @checked($selectedProvider === 'paypal')>
+                                        <span class="crm-paylink-provider-card">
+                                            <span class="crm-paylink-provider-icon crm-paylink-provider-icon--paypal">
+                                                <i class="fa fa-cc-paypal"></i>
+                                            </span>
+                                            <span>
+                                                <span class="crm-paylink-provider-name">PayPal</span>
+                                                <span class="crm-paylink-provider-desc d-block">PayPal checkout</span>
+                                            </span>
+                                        </span>
+                                    </label>
+                                @endif
+                            </div>
+                        @endif
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Expires in (hours)</label>
                                 <input type="number" class="form-control" name="expires_in_hours" min="1"
-                                    max="3" value="{{ old('expires_in_hours', 3) }}" placeholder="1–3">
-                                <div class="crm-field-hint">Link valid for up to 3 hours</div>
+                                    max="720" value="{{ old('expires_in_hours', 3) }}" placeholder="1–720">
+                                <div class="crm-field-hint">Link valid for up to 30 days (720 hours)</div>
                             </div>
                         </div>
                     </div>

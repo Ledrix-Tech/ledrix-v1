@@ -167,6 +167,11 @@
                                                         </div>
 
                                                         <hr>
+                                                        <div class="col-lg-12 mb-3">
+                                                            <a href="{{ route('admin.2fa.setup') }}" class="btn btn-outline-primary btn-sm">
+                                                                Two-factor authentication (2FA)
+                                                            </a>
+                                                        </div>
                                                         <div class="col-lg-2 m-auto">
                                                             <button type="submit"
                                                                 class="btn btn-success custom-btn blue">
