@@ -24,6 +24,8 @@ Route::get('/pricing', [FrontViewsController::class, 'showPricingPage'])->name('
 Route::get('/features', [FrontViewsController::class, 'showFeaturesPage'])->name('features.get');
 Route::get('/about', [FrontViewsController::class, 'showAboutPage'])->name('about.get');
 Route::get('/faq', [FrontViewsController::class, 'showFaqPage'])->name('faq.get');
+Route::get('/terms', [FrontViewsController::class, 'showTermsPage'])->name('terms.get');
+Route::get('/privacy-policy', [FrontViewsController::class, 'showPrivacyPage'])->name('privacy.get');
 
 // Paid-ads landing pages (focused CTAs — use these as campaign destinations)
 Route::get('/lp/agency-crm-trial', [LandingPagesController::class, 'trial'])->name('lp.trial');

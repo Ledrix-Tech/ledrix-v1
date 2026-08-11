@@ -19,6 +19,12 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Meta Pixel / domain verification only work if production .env has:
+#   APP_URL=https://ledrix.co
+#   FACEBOOK_DOMAIN_VERIFICATION=...
+#   META_PIXEL_ID=...
+# then re-run config:cache (never cache with localhost APP_URL).
+
 # Ensure queue tables exist when using database driver
 php artisan queue:restart 2>/dev/null || true
 

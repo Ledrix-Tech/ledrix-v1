@@ -13,7 +13,7 @@
     ]])
     <script type="application/ld+json">
     {!! json_encode([
-        '@context' => 'https://schema.org',
+        '@'.'context' => 'https://schema.org',
         '@type' => 'ContactPage',
         'name' => 'Contact Ledrix CRM',
         'url' => route('contact-us.get'),
@@ -21,7 +21,7 @@
         'mainEntity' => [
             '@type' => 'Organization',
             'name' => config('seo.organization.name'),
-            'url' => config('app.url'),
+            'url' => config('seo.site_url') ?: config('app.url'),
             'email' => config('seo.organization.email'),
             'contactPoint' => [
                 '@type' => 'ContactPoint',
@@ -106,7 +106,8 @@
                                             <input type="tel" id="phone" name="phone"
                                                 value="{{ old('phone') }}"
                                                 class="form-control mkt-form-control"
-                                                placeholder="Enter your phone number">
+                                                data-phone-input
+                                                placeholder="Enter your phone number" autocomplete="tel">
                                         </div>
                                     </div>
                                     <div class="col-md-6">

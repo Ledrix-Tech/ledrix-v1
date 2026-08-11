@@ -14,7 +14,7 @@
     @if ($packages->isNotEmpty())
         <script type="application/ld+json">
         {!! json_encode([
-            '@context' => 'https://schema.org',
+            '@'.'context' => 'https://schema.org',
             '@type' => 'Product',
             'name' => 'Ledrix CRM Subscription',
             'description' => 'Multi-tenant sales CRM software with plan-based modules and free trial.',

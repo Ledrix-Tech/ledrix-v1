@@ -38,7 +38,7 @@
 
     {!! json_encode([
 
-        '@context' => 'https://schema.org',
+        '@'.'context' => 'https://schema.org',
 
         '@type' => 'AboutPage',
 

@@ -69,4 +69,14 @@ class ViewsController extends Controller
     {
         return view('front.pages.faq');
     }
+
+    public function showTermsPage()
+    {
+        return view('front.pages.terms');
+    }
+
+    public function showPrivacyPage()
+    {
+        return view('front.pages.privacy-policy');
+    }
 }

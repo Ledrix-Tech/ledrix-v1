@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Concerns\ResolvesOrganizationTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Central\AuditLog;
+use App\Rules\E164Phone;
+use App\Rules\NotDisposableEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -25,14 +27,16 @@ class OrganizationSettingsController extends Controller
     {
         $tenant = $this->organizationTenant();
 
+        $emailRule = app()->environment('production') ? 'email:rfc,dns' : 'email:rfc';
+
         $validated = $request->validate([
             'name'            => ['required', 'string', 'max:255'],
-            'phone'           => ['nullable', 'string', 'max:40'],
+            'phone'           => ['nullable', 'string', 'max:20', new E164Phone],
             'country'         => ['nullable', 'string', 'max:5'],
             'website'         => ['nullable', 'url', 'max:255'],
             'billing_name'    => ['nullable', 'string', 'max:255'],
-            'billing_email'   => ['nullable', 'email', 'max:255'],
-            'billing_phone'   => ['nullable', 'string', 'max:40'],
+            'billing_email'   => ['nullable', $emailRule, 'max:255', new NotDisposableEmail],
+            'billing_phone'   => ['nullable', 'string', 'max:20', new E164Phone],
             'billing_address' => ['nullable', 'string', 'max:1000'],
         ]);
 

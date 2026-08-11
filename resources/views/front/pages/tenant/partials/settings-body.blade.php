@@ -25,14 +25,24 @@
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
                     <label class="form-label" for="phone">Phone</label>
-                    <input id="phone" type="text" name="phone" class="form-control @error('phone') is-invalid @enderror"
-                        value="{{ old('phone', $tenant->phone) }}" maxlength="40">
-                    @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div class="auth-phone-field">
+                        <input id="phone" type="tel" name="phone"
+                            class="form-control @error('phone') is-invalid @enderror"
+                            value="{{ old('phone', $tenant->phone) }}"
+                            data-phone-input data-phone-sync-country="1"
+                            data-initial-country="{{ strtolower(old('country', $tenant->country ?: 'PK')) }}"
+                            maxlength="20" autocomplete="tel" placeholder="Phone number">
+                    </div>
+                    @error('phone')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" for="country">Country (ISO)</label>
-                    <input id="country" type="text" name="country" class="form-control @error('country') is-invalid @enderror"
-                        value="{{ old('country', $tenant->country) }}" maxlength="5" placeholder="PK / US">
+                    <select id="country" name="country" class="form-select @error('country') is-invalid @enderror">
+                        <option value="">Select country</option>
+                        @foreach (['PK' => 'Pakistan', 'US' => 'United States', 'GB' => 'United Kingdom', 'IN' => 'India', 'AE' => 'United Arab Emirates', 'CA' => 'Canada', 'SA' => 'Saudi Arabia'] as $code => $label)
+                            <option value="{{ $code }}" @selected(old('country', $tenant->country) === $code)>{{ $label }}</option>
+                        @endforeach
+                    </select>
                     @error('country')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>
@@ -61,10 +71,15 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" for="billing_phone">Billing phone</label>
-                    <input id="billing_phone" type="text" name="billing_phone"
-                        class="form-control @error('billing_phone') is-invalid @enderror"
-                        value="{{ old('billing_phone', $tenant->billing_phone) }}" maxlength="40">
-                    @error('billing_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div class="auth-phone-field">
+                        <input id="billing_phone" type="tel" name="billing_phone"
+                            class="form-control @error('billing_phone') is-invalid @enderror"
+                            value="{{ old('billing_phone', $tenant->billing_phone) }}"
+                            data-phone-input
+                            data-initial-country="{{ strtolower(old('country', $tenant->country ?: 'PK')) }}"
+                            maxlength="20" autocomplete="tel" placeholder="Billing phone">
+                    </div>
+                    @error('billing_phone')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
             </div>
             <div class="mb-3">
@@ -79,3 +94,14 @@
         </div>
     </form>
 </div>
+
+@push('styles')
+    @include('front.includes.phone-input-styles')
+    <style>
+        .auth-phone-field .iti { width: 100%; }
+        .auth-phone-field .iti__country-list { z-index: 20; }
+    </style>
+@endpush
+@push('scripts')
+    @include('front.includes.phone-input-assets')
+@endpush

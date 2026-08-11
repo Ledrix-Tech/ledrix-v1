@@ -1333,3 +1333,324 @@
     line-height: 1.65;
     padding: 0 1.25rem 1.15rem;
 }
+
+/* ── Legal pages (terms / privacy) ─────────────────────── */
+.mkt-page-legal {
+    background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(99, 102, 241, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(14, 165, 233, 0.08), transparent 50%),
+        #f1f5f9;
+}
+
+.mkt-legal-hero {
+    padding: 2.5rem 0 0;
+}
+
+.mkt-legal-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 1.25rem;
+}
+
+.mkt-legal-crumbs a {
+    color: #4338ca;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.mkt-legal-crumbs a:hover {
+    text-decoration: underline;
+}
+
+.mkt-legal-hero-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.mkt-legal-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #4338ca;
+    background: rgba(67, 56, 202, 0.1);
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.mkt-legal-hero h1 {
+    font-size: clamp(1.85rem, 3.2vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+    margin: 0 0 0.5rem;
+    line-height: 1.15;
+}
+
+.mkt-legal-lead {
+    margin: 0;
+    max-width: 40rem;
+    color: #475569;
+    font-size: 1.05rem;
+    line-height: 1.55;
+}
+
+.mkt-legal-updated {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0.85rem 1.1rem;
+    min-width: 10.5rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.mkt-legal-updated-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 0.2rem;
+}
+
+.mkt-legal-updated strong {
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.mkt-legal-switch {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.3rem;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+    margin-bottom: -1.15rem;
+    position: relative;
+    z-index: 2;
+}
+
+.mkt-legal-switch a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 650;
+    color: #64748b;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mkt-legal-switch a:hover {
+    color: #4338ca;
+    background: rgba(67, 56, 202, 0.06);
+}
+
+.mkt-legal-switch a.is-active {
+    color: #fff;
+    background: linear-gradient(135deg, #4338ca, #6366f1);
+    box-shadow: 0 6px 16px rgba(67, 56, 202, 0.28);
+}
+
+.mkt-legal-body {
+    padding: 2.5rem 0 4rem;
+}
+
+.mkt-legal {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.5rem 1.35rem 0.5rem;
+    color: #334155;
+    line-height: 1.7;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+}
+
+.mkt-legal-section {
+    padding: 1.35rem 0.35rem 1.45rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.mkt-legal-section--last {
+    border-bottom: 0;
+}
+
+.mkt-legal h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #0f172a;
+    font-size: 1.15rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.75rem;
+    line-height: 1.3;
+}
+
+.mkt-legal-num {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.15rem;
+    height: 2.15rem;
+    padding: 0 0.4rem;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #4338ca;
+    background: linear-gradient(145deg, #eef2ff, #e0e7ff);
+    border: 1px solid #c7d2fe;
+}
+
+.mkt-legal h3 {
+    color: #1e293b;
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin: 0 0 0.55rem;
+}
+
+.mkt-legal p,
+.mkt-legal ul {
+    margin-bottom: 0.75rem;
+}
+
+.mkt-legal p:last-child,
+.mkt-legal ul:last-child {
+    margin-bottom: 0;
+}
+
+.mkt-legal ul {
+    padding-left: 1.15rem;
+}
+
+.mkt-legal li + li {
+    margin-top: 0.35rem;
+}
+
+.mkt-legal a {
+    color: #4338ca;
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.mkt-legal a:hover {
+    text-decoration: underline;
+}
+
+.mkt-legal-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+}
+
+.mkt-legal-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+}
+
+.mkt-legal-card ul {
+    margin-bottom: 0;
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+.mkt-legal-callout {
+    margin-top: 0.85rem !important;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    font-weight: 650;
+}
+
+.mkt-legal-footer-nav {
+    margin-top: 1.25rem;
+}
+
+.mkt-legal-next {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.1rem 1.25rem;
+    text-decoration: none;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.mkt-legal-next span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.mkt-legal-next strong {
+    color: #0f172a;
+    font-size: 1rem;
+}
+
+.mkt-legal-next:hover {
+    border-color: #c7d2fe;
+    transform: translateY(-1px);
+}
+
+.mkt-legal-next:hover strong {
+    color: #4338ca;
+}
+
+@media (min-width: 768px) {
+    .mkt-legal {
+        padding: 1.75rem 2rem 0.75rem;
+    }
+
+    .mkt-legal-section {
+        padding: 1.5rem 0.5rem 1.6rem;
+    }
+
+    .mkt-legal-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .mkt-legal-body {
+        padding-top: 3rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .mkt-legal {
+        padding: 2rem 2.5rem 1rem;
+    }
+
+    .mkt-legal h2 {
+        font-size: 1.22rem;
+    }
+}
+

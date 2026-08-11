@@ -8,11 +8,7 @@ class JazzCashService
 {
     public function isConfigured(): bool
     {
-        return (bool) (
-            $this->merchantId()
-            && $this->password()
-            && $this->integritySalt()
-        );
+        return app(PlatformBillingSettingsService::class)->isReady('jazzcash');
     }
 
     public function checkoutUrl(): string

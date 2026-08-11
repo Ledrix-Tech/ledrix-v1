@@ -21,7 +21,11 @@
     $ogImageAlt = trim($__env->yieldContent('og_image_alt')) ?: ($siteName . ' — multi-tenant sales CRM software');
 
     $org = config('seo.organization');
-    $orgUrl = rtrim($org['url'] ?? config('app.url'), '/');
+    $orgUrl = rtrim((string) (config('seo.site_url') ?: ($org['url'] ?? null) ?: config('app.url')), '/');
+    // Never emit localhost into production schema / Meta domain signals
+    if (app()->environment('production') && preg_match('#^https?://(127\.0\.0\.1|localhost)(:\d+)?#i', $orgUrl)) {
+        $orgUrl = rtrim((string) (config('seo.site_url') ?: 'https://ledrix.co'), '/');
+    }
     $orgLogo = asset($org['logo'] ?? config('seo.og_image'));
 
     $graph = [
@@ -77,6 +81,13 @@
     }
 @endphp
 
+@if (config('seo.facebook_domain_verification'))
+    <meta name="facebook-domain-verification" content="{{ config('seo.facebook_domain_verification') }}">
+@endif
+@if (config('seo.google_site_verification'))
+    <meta name="google-site-verification" content="{{ config('seo.google_site_verification') }}">
+@endif
+
 <title>{{ $fullTitle }}</title>
 <meta name="description" content="{{ $description }}">
 <meta name="keywords" content="{{ $keywords }}">
@@ -88,13 +99,6 @@
 <link rel="canonical" href="{{ $canonical }}">
 <link rel="alternate" hreflang="en" href="{{ $canonical }}">
 <link rel="alternate" hreflang="x-default" href="{{ $canonical }}">
-
-@if (config('seo.google_site_verification'))
-    <meta name="google-site-verification" content="{{ config('seo.google_site_verification') }}">
-@endif
-@if (config('seo.facebook_domain_verification'))
-    <meta name="facebook-domain-verification" content="{{ config('seo.facebook_domain_verification') }}">
-@endif
 
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="{{ $ogType }}">
@@ -117,8 +121,8 @@
 
 <script type="application/ld+json">
 {!! json_encode([
-    '@context' => 'https://schema.org',
-    '@graph' => $graph,
+    '@'.'context' => 'https://schema.org',
+    '@'.'graph' => $graph,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) !!}
 </script>
 

@@ -47,7 +47,7 @@ trait UsesSqliteCentral
             $table->id();
             $table->string('token', 64)->unique();
             $table->string('name');
-            $table->string('email');
+            $table->string('email', 191);
             $table->string('role')->default('support');
             $table->unsignedBigInteger('invited_by')->nullable();
             $table->timestamp('expires_at');
@@ -56,7 +56,7 @@ trait UsesSqliteCentral
         });
 
         Schema::connection('central')->create('super_admin_password_resets', function (Blueprint $table) {
-            $table->string('email')->primary();
+            $table->string('email', 191)->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });

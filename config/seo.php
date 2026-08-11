@@ -16,6 +16,9 @@ return [
 
     'facebook_domain_verification' => env('FACEBOOK_DOMAIN_VERIFICATION'),
 
+    /** Public marketing site URL (use https://ledrix.co in production — do not leave APP_URL as localhost). */
+    'site_url' => env('SEO_SITE_URL', env('APP_URL')),
+
     'theme_color' => '#4338ca',
 
     'og_image' => 'front-assets/imgs/logo-ic.png',
@@ -74,6 +77,8 @@ return [
         ['path' => '/about', 'priority' => '0.85', 'changefreq' => 'monthly'],
         ['path' => '/faq', 'priority' => '0.85', 'changefreq' => 'monthly'],
         ['path' => '/contact-us', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['path' => '/terms', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['path' => '/privacy-policy', 'priority' => '0.4', 'changefreq' => 'yearly'],
     ],
 
     'robots_disallow' => [

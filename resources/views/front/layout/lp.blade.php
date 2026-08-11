@@ -41,6 +41,8 @@
             <p class="lp-footer-links">
                 <a href="{{ route('pricing.get') }}">Pricing</a>
                 <a href="{{ route('contact-us.get') }}">Contact</a>
+                <a href="{{ route('terms.get') }}">Terms</a>
+                <a href="{{ route('privacy.get') }}">Privacy</a>
             </p>
         </div>
     </footer>

@@ -84,10 +84,6 @@ class CreateSubscriptionInvoiceService
             throw new RuntimeException('Subscription amount is not configured for this plan.');
         }
 
-        if ($gateway === 'jazzcash' && ! $this->pricingService->jazzCashConfigured()) {
-            throw new RuntimeException('JazzCash is not configured. Contact support.');
-        }
-
         if ($gateway === 'bank_transfer' && ! $this->pricingService->bankTransferConfigured($currency)) {
             throw new RuntimeException('Bank transfer is not available. Contact support.');
         }
@@ -98,6 +94,14 @@ class CreateSubscriptionInvoiceService
 
         if ($gateway === 'stripe' && ! app(PlatformBillingSettingsService::class)->isReady('stripe')) {
             throw new RuntimeException('Stripe is not available. Contact support.');
+        }
+
+        if ($gateway === 'jazzcash' && ! app(PlatformBillingSettingsService::class)->isReady('jazzcash')) {
+            throw new RuntimeException('JazzCash is not available. Contact support.');
+        }
+
+        if ($gateway === 'payoneer' && ! app(PlatformBillingSettingsService::class)->isReady('payoneer')) {
+            throw new RuntimeException('Payoneer is not available. Contact support.');
         }
 
         $reference = 'LDRX-' . $tenant->id . '-' . strtoupper(Str::random(8));

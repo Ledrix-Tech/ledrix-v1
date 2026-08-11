@@ -109,16 +109,20 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="auth-label" for="phone">Phone</label>
-                                            <div class="auth-input-group">
-                                                <i class="bi bi-telephone auth-input-icon"></i>
-                                                <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" class="form-control">
+                                            <div class="auth-phone-field">
+                                                <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
+                                                    class="form-control @error('phone') is-invalid @enderror"
+                                                    data-phone-input data-phone-required="1" data-phone-sync-country="1"
+                                                    data-initial-country="{{ strtolower(old('country', 'PK')) }}"
+                                                    placeholder="Phone number" required autocomplete="tel">
                                             </div>
+                                            @error('phone')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="col-md-6">
                                             <label class="auth-label" for="country">Country</label>
                                             <select id="country" name="country" class="form-select @error('country') is-invalid @enderror" required>
                                                 <option value="">Select country</option>
-                                                @foreach (['PK' => 'Pakistan', 'US' => 'United States', 'UK' => 'United Kingdom', 'IN' => 'India', 'AE' => 'UAE', 'CA' => 'Canada'] as $code => $label)
+                                                @foreach (['PK' => 'Pakistan', 'US' => 'United States', 'GB' => 'United Kingdom', 'IN' => 'India', 'AE' => 'UAE', 'CA' => 'Canada', 'SA' => 'Saudi Arabia'] as $code => $label)
                                                     <option value="{{ $code }}" @selected(old('country') === $code)>{{ $label }}</option>
                                                 @endforeach
                                             </select>
@@ -156,7 +160,14 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="auth-label" for="billing-phone">Billing phone</label>
-                                            <input type="text" id="billing-phone" name="billing_phone" value="{{ old('billing_phone') }}" class="form-control">
+                                            <div class="auth-phone-field">
+                                                <input type="tel" id="billing-phone" name="billing_phone" value="{{ old('billing_phone') }}"
+                                                    class="form-control @error('billing_phone') is-invalid @enderror"
+                                                    data-phone-input
+                                                    data-initial-country="{{ strtolower(old('country', 'PK')) }}"
+                                                    placeholder="Billing phone" autocomplete="tel">
+                                            </div>
+                                            @error('billing_phone')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="col-12">
                                             <label class="auth-label" for="billing-address">Billing address</label>

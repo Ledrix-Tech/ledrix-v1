@@ -62,11 +62,7 @@ class SubscriptionPricingService
 
     public function jazzCashConfigured(): bool
     {
-        return (bool) (
-            config('services.jazzcash.merchant_id')
-            && config('services.jazzcash.password')
-            && config('services.jazzcash.integrity_salt')
-        );
+        return app(PlatformBillingSettingsService::class)->isReady('jazzcash');
     }
 
     public function bankTransferConfigured(string $currency): bool

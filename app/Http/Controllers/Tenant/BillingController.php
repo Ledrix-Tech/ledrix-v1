@@ -9,12 +9,10 @@ use App\Models\Central\TenantPayment;
 use App\Models\Central\AuditLog;
 use App\Services\Billing\BankTransferQrService;
 use App\Services\Billing\CancelStaleSubscriptionPaymentsService;
-use App\Services\Billing\JazzCashService;
-use App\Services\Billing\PayFastService;
+use App\Services\Billing\PlatformBillingSettingsService;
 use App\Services\Billing\ReferralRewardService;
 use App\Services\Billing\SubscriptionPricingService;
 use App\Services\Billing\TenantBillingRegion;
-use App\Services\Billing\TenantStripeCheckoutService;
 use App\Services\Tenant\SubscriptionAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,9 +25,7 @@ class BillingController extends Controller
     public function index(
         SubscriptionAccessService $accessService,
         SubscriptionPricingService $pricingService,
-        PayFastService $payFast,
-        JazzCashService $jazzCash,
-        TenantStripeCheckoutService $stripeCheckout,
+        PlatformBillingSettingsService $platformBilling,
         CancelStaleSubscriptionPaymentsService $cancelStalePayments,
         BankTransferQrService $qrService,
         ReferralRewardService $referralRewards,
@@ -85,10 +81,11 @@ class BillingController extends Controller
             ->latest('issued_at')
             ->get();
 
-        $stripeConfigured = $stripeCheckout->isConfigured();
-        $payfastConfigured = $payFast->isConfigured();
-        $jazzcashConfigured = $jazzCash->isConfigured();
-        $meezanConfigured = $pricingService->bankTransferConfigured('PKR');
+        // Only Super Admin–enabled providers (enabled + credentials) are offered to tenants.
+        $stripeConfigured = $platformBilling->isReady('stripe');
+        $payfastConfigured = $platformBilling->isReady('payfast');
+        $jazzcashConfigured = $platformBilling->isReady('jazzcash');
+        $meezanConfigured = $platformBilling->isReady('meezan');
 
         $stripeReady = $stripeConfigured && ! $isPakistanBuyer;
         $payfastReady = $payfastConfigured && $isPakistanBuyer;
@@ -229,8 +226,8 @@ class BillingController extends Controller
         ])->save();
 
         $label = $validated['preferred_billing_currency'] === 'PKR'
-            ? 'Pakistan (PKR) — Meezan / PayFast'
-            : 'International (USD) — Stripe';
+            ? 'Pakistan (PKR)'
+            : 'International (USD)';
 
         return $this->organizationRedirect('billing', [], 'success', "Billing region updated to {$label}.");
     }

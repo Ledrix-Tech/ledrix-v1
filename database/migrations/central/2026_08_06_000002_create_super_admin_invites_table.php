@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::connection('central')->hasTable('super_admin_invites')) {
-            return;
-        }
+        // Previous failed run can leave a table without the composite index.
+        Schema::connection('central')->dropIfExists('super_admin_invites');
 
         Schema::connection('central')->create('super_admin_invites', function (Blueprint $table) {
             $table->id();
             $table->string('token', 64)->unique();
             $table->string('name');
-            $table->string('email');
+            // 191 keeps utf8mb4 indexes under MySQL's 1000-byte limit with accepted_at
+            $table->string('email', 191);
             $table->enum('role', ['admin', 'support'])->default('support');
             $table->foreignId('invited_by')
                 ->nullable()
