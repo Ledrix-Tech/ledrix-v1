@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Central\AuditLog;
+use App\Models\Central\Tenant;
 use App\Services\Security\TotpService;
+use App\Services\Tenant\ProvisionTenantAdminService;
+use App\Services\Tenant\SubscriptionAccessService;
+use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -126,8 +130,45 @@ class AdminTwoFactorController extends Controller
         session()->forget(['admin_2fa_pending_id', 'admin_2fa_remember']);
         $request->session()->regenerate();
 
-        if ($admin->tenant_id) {
-            session(['tenant_id' => $admin->tenant_id]);
+        if (! $admin->tenant_id) {
+            $tenant = Tenant::query()->where('email', $admin->email)->first();
+            if ($tenant) {
+                $admin = app(ProvisionTenantAdminService::class)->provision($tenant);
+                Auth::guard('admin')->login($admin, false);
+            }
+        }
+
+        if (! $admin->tenant_id) {
+            Auth::guard('admin')->logout();
+            session()->forget(['tenant_id', 'role']);
+
+            return redirect()
+                ->route('admin.login.get')
+                ->with(
+                    'error',
+                    'No organization workspace is linked to this admin account. Sign in via your organization portal, or contact support.'
+                );
+        }
+
+        session(['tenant_id' => $admin->tenant_id]);
+        TenantContext::set((int) $admin->tenant_id);
+
+        $tenant = Tenant::query()->find($admin->tenant_id);
+        $access = app(SubscriptionAccessService::class);
+
+        if ($tenant && ! $access->canUseCrm($tenant)) {
+            if (($admin->role ?? null) === 'admin' && $access->canAccessOrgBilling($tenant)) {
+                return redirect()
+                    ->route('admin.org.billing')
+                    ->with('error', 'Your subscription is not active. Renew below to restore CRM access.');
+            }
+
+            Auth::guard('admin')->logout();
+            session()->forget(['tenant_id', 'role']);
+
+            return redirect()
+                ->route('admin.login.get')
+                ->with('error', 'Your subscription is not active. Please renew via your organization portal, or contact support.');
         }
 
         AuditLog::record(

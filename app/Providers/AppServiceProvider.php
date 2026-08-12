@@ -45,6 +45,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrap();
 
+        \Illuminate\Support\Facades\Auth::provider('unscoped_eloquent', function ($app, array $config) {
+            return new \App\Auth\UnscopedEloquentUserProvider($app['hash'], $config['model']);
+        });
+
         try {
             app(\App\Services\Billing\PlatformBillingSettingsService::class)->applyToConfig();
         } catch (\Throwable) {

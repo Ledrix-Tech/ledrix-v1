@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Central\Tenant;
 use App\Models\Seller;
+use App\Services\Tenant\ProvisionTenantAdminService;
 use App\Services\Tenant\SubscriptionAccessService;
 use App\Support\TenantContext;
 use Carbon\Carbon;
@@ -50,13 +51,17 @@ class AdminAuthController extends Controller
         TenantContext::clear();
         session()->forget('tenant_id');
 
-        $admin = Admin::withoutGlobalScopes()
-            ->where('email', $credentials['email'])
-            ->get()
-            ->first(fn (Admin $candidate) => Hash::check($credentials['password'], $candidate->password));
+        $admin = $this->resolveAdminForLogin($credentials['email'], $credentials['password']);
 
         if ($admin) {
             RateLimiter::clear($throttleKey);
+
+            if (! $admin->tenant_id) {
+                return back()->with(
+                    'error',
+                    'No organization workspace is linked to this admin account. Sign in via your organization portal (tenant login → Enter CRM), or contact support.'
+                );
+            }
 
             if ($admin->two_factor_secret) {
                 session([
@@ -70,29 +75,37 @@ class AdminAuthController extends Controller
             Auth::guard('admin')->login($admin);
             $request->session()->regenerate();
 
-            if ($admin->tenant_id) {
-                session(['tenant_id' => $admin->tenant_id]);
-                TenantContext::set($admin->tenant_id);
+            session(['tenant_id' => $admin->tenant_id]);
+            TenantContext::set((int) $admin->tenant_id);
 
-                $tenant = Tenant::query()->find($admin->tenant_id);
-                $access = app(SubscriptionAccessService::class);
+            $tenant = Tenant::query()->find($admin->tenant_id);
+            $access = app(SubscriptionAccessService::class);
 
-                if ($tenant && ! $access->canUseCrm($tenant)) {
-                    // Keep admin session so they can renew inside Admin → Billing.
-                    if (($admin->role ?? null) === 'admin' && $access->canAccessOrgBilling($tenant)) {
-                        return redirect()
-                            ->route('admin.org.billing')
-                            ->with('error', 'Your subscription is not active. Renew below to restore CRM access.');
-                    }
+            if (! $tenant) {
+                Auth::guard('admin')->logout();
+                session()->forget(['tenant_id', 'role']);
 
-                    Auth::guard('admin')->logout();
-                    session()->forget(['tenant_id', 'role']);
+                return back()->with(
+                    'error',
+                    'Organization workspace was not found for this account. Contact support.'
+                );
+            }
 
-                    return back()->with(
-                        'error',
-                        'Your subscription is not active. Please renew via your organization portal, or contact support.'
-                    );
+            if (! $access->canUseCrm($tenant)) {
+                // Keep admin session so they can renew inside Admin → Billing.
+                if (($admin->role ?? null) === 'admin' && $access->canAccessOrgBilling($tenant)) {
+                    return redirect()
+                        ->route('admin.org.billing')
+                        ->with('error', 'Your subscription is not active. Renew below to restore CRM access.');
                 }
+
+                Auth::guard('admin')->logout();
+                session()->forget(['tenant_id', 'role']);
+
+                return back()->with(
+                    'error',
+                    'Your subscription is not active. Please renew via your organization portal, or contact support.'
+                );
             }
 
             if ($admin->role === 'demo') {
@@ -119,7 +132,39 @@ class AdminAuthController extends Controller
 
         RateLimiter::hit($throttleKey, 60);
 
-        return back()->with('error', '❌ Record not matched with data !!!');
+        return back()->with('error', 'Invalid email or password.');
+    }
+
+    /**
+     * Prefer a tenant-linked admin when multiple rows share an email.
+     * Orphan rows (no tenant_id) are auto-linked when a matching Tenant email exists.
+     */
+    protected function resolveAdminForLogin(string $email, string $password): ?Admin
+    {
+        $matches = Admin::withoutGlobalScopes()
+            ->where('email', $email)
+            ->get()
+            ->filter(fn (Admin $candidate) => Hash::check($password, $candidate->password))
+            ->sortByDesc(fn (Admin $candidate) => (int) (bool) $candidate->tenant_id)
+            ->values();
+
+        /** @var Admin|null $admin */
+        $admin = $matches->first();
+
+        if (! $admin) {
+            return null;
+        }
+
+        if ($admin->tenant_id) {
+            return $admin;
+        }
+
+        $tenant = Tenant::query()->where('email', $email)->first();
+        if (! $tenant) {
+            return $admin;
+        }
+
+        return app(ProvisionTenantAdminService::class)->provision($tenant);
     }
 
     public function adminForgotPost(Request $request)

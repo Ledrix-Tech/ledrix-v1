@@ -111,18 +111,18 @@ return [
         ],
 
         'admins' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\Admin::class),
+            'driver' => 'unscoped_eloquent',
+            'model' => App\Models\Admin::class,
         ],
 
         'sellers' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\Seller::class),
+            'driver' => 'unscoped_eloquent',
+            'model' => App\Models\Seller::class,
         ],
 
         'clients' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\Client::class),
+            'driver' => 'unscoped_eloquent',
+            'model' => App\Models\Client::class,
         ],
 
         // 'users' => [

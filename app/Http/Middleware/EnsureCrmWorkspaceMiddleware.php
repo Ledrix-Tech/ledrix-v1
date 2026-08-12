@@ -21,7 +21,7 @@ class EnsureCrmWorkspaceMiddleware
     {
         $tenantId = $this->resolveTenantIdFromActor();
 
-        abort_if($tenantId <= 0, 403, 'Tenant workspace could not be resolved for this account.');
+        abort_if($tenantId <= 0, 403, 'No organization workspace is available for this account. Sign out and sign in again, or use your organization portal → Enter CRM.');
 
         session(['tenant_id' => $tenantId]);
         TenantContext::set($tenantId);
@@ -32,7 +32,7 @@ class EnsureCrmWorkspaceMiddleware
             abort_if(
                 ! app()->environment('testing'),
                 403,
-                'Tenant workspace not found.'
+                'Organization workspace was not found. Contact support.'
             );
 
             return $next($request);
