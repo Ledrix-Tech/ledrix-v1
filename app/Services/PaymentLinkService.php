@@ -14,6 +14,7 @@ class PaymentLinkService
     public function __construct(
         private TenantLimitService $limits,
         private TenantFeatureService $features,
+        private PaymentGatewayFactory $gateways,
     ) {}
     public function createInstallmentLink(
         Brand   $brand,
@@ -36,6 +37,12 @@ class PaymentLinkService
         abort_unless(in_array($orderType, ['original', 'renewal'], true), 422, 'Invalid order type.');
 
         abort_unless($provider && in_array($provider, ['stripe', 'paypal'], true), 422, 'Invalid provider.');
+
+        abort_unless(
+            $this->gateways->brandHasProvider($brand, $provider, 'ppc'),
+            422,
+            'No active '.$provider.' merchant is configured for this brand. Add Payment Accounts before generating a link.'
+        );
 
         $tenantId = (int) ($brand->tenant_id ?? TenantContext::resolve() ?? 0);
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Models\AccountKey;
 use App\Models\Brand;
 use App\Models\Client;
 use App\Models\Lead;
@@ -17,6 +18,16 @@ trait CreatesPaymentFlow
         $brand = Brand::factory()->create([
             'status' => 'Active',
         ]);
+
+        AccountKey::query()->create(array_merge([
+            'tenant_id'          => $brand->tenant_id ?? 1,
+            'brand_id'           => $brand->id,
+            'module'             => 'ppc',
+            'status'             => 'active',
+            'stripe_secret_key'  => 'sk_test_payment_flow',
+            'paypal_client_id'   => 'paypal_client_test',
+            'paypal_secret'      => 'paypal_secret_test',
+        ], $overrides['account_key'] ?? []));
 
         $seller = Seller::factory()->create([
             'brand_id'  => $brand->id,

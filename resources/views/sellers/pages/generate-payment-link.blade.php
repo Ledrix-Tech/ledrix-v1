@@ -128,7 +128,11 @@
                         </div>
                         @if (! $hasStripe && ! $hasPayPal)
                             <div class="alert alert-warning mb-0">
-                                No payment providers are enabled for your plan. Contact your administrator.
+                                @if (! ($planHasStripe ?? false) && ! ($planHasPayPal ?? false))
+                                    No payment providers are enabled for your plan. Contact your administrator.
+                                @else
+                                    No payment merchant is configured for this brand. Ask an admin to add Stripe/PayPal keys under Payment Accounts before generating a link.
+                                @endif
                             </div>
                         @else
                             <div class="crm-paylink-provider mb-3">

@@ -77,11 +77,19 @@ class CheckoutController extends Controller
             }
         }
 
+        $providerAvailability = $this->providerAvailabilityForBrand($brand);
+
         if ($seller) {
-            return view('sellers.pages.generate-payment-link', compact('brand', 'lead', 'order'));
+            return view('sellers.pages.generate-payment-link', array_merge(
+                compact('brand', 'lead', 'order'),
+                $providerAvailability
+            ));
         }
 
-        return view('admin.pages.generate-payment-link', compact('brand', 'lead', 'order'));
+        return view('admin.pages.generate-payment-link', array_merge(
+            compact('brand', 'lead', 'order'),
+            $providerAvailability
+        ));
     }
 
     public function renewOrderLink(Request $request, Brand $brand, Lead $lead, ?Order $order = null)
@@ -130,11 +138,50 @@ class CheckoutController extends Controller
             }
         }
 
+        $providerAvailability = $this->providerAvailabilityForBrand($brand);
+
         if ($seller) {
-            return view('sellers.pages.renew-payment-link', compact('brand', 'lead', 'order', 'orderType'));
+            return view('sellers.pages.renew-payment-link', array_merge(
+                compact('brand', 'lead', 'order', 'orderType'),
+                $providerAvailability
+            ));
         }
 
-        return view('admin.pages.renew-payment-link', compact('brand', 'lead', 'order', 'orderType'));
+        return view('admin.pages.renew-payment-link', array_merge(
+            compact('brand', 'lead', 'order', 'orderType'),
+            $providerAvailability
+        ));
+    }
+
+    /**
+     * Plan feature + brand merchant keys. Both required before offering a provider.
+     *
+     * @return array{
+     *     tenantHasStripe: bool,
+     *     tenantHasPayPal: bool,
+     *     brandHasMerchant: bool,
+     *     planHasStripe: bool,
+     *     planHasPayPal: bool
+     * }
+     */
+    protected function providerAvailabilityForBrand(Brand $brand): array
+    {
+        $tenantId = (int) ($brand->tenant_id ?? 0) ?: null;
+        $features = app(TenantFeatureService::class);
+        $gateways = app(PaymentGatewayFactory::class);
+
+        $planHasStripe = $features->enabled('stripe', $tenantId);
+        $planHasPayPal = $features->enabled('paypal', $tenantId);
+        $brandHasStripe = $gateways->brandHasProvider($brand, 'stripe', 'ppc');
+        $brandHasPayPal = $gateways->brandHasProvider($brand, 'paypal', 'ppc');
+
+        return [
+            'planHasStripe'    => $planHasStripe,
+            'planHasPayPal'    => $planHasPayPal,
+            'brandHasMerchant' => $brandHasStripe || $brandHasPayPal,
+            'tenantHasStripe'  => $planHasStripe && $brandHasStripe,
+            'tenantHasPayPal'  => $planHasPayPal && $brandHasPayPal,
+        ];
     }
 
     protected function sellerOwnsLead(Seller $seller, Lead $lead, Brand $brand): bool
@@ -168,6 +215,15 @@ class CheckoutController extends Controller
             'order_type'       => ['nullable', Rule::in(['original', 'renewal'])],
             'base_order_id'    => ['nullable', 'integer', 'exists:orders,id'],
         ]);
+
+        if (! app(PaymentGatewayFactory::class)->brandHasProvider($brand, $data['provider'], 'ppc')) {
+            return back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'No active '.$data['provider'].' merchant is configured for this brand. Add Payment Accounts before generating a link.'
+                );
+        }
 
         if ((float) $data['payable_amount'] > (float) $data['total_amount']) {
             return back()->withInput()->with('error', 'Payable amount cannot exceed total amount.');
@@ -281,7 +337,9 @@ class CheckoutController extends Controller
             $message = $e->getMessage();
             $safeToShow = str_contains($message, 'active payment link')
                 || str_contains($message, 'subscription plan')
-                || str_contains($message, 'not included in your');
+                || str_contains($message, 'not included in your')
+                || str_contains($message, 'merchant is configured')
+                || str_contains($message, 'Payment Accounts');
 
             return back()->with('error', $safeToShow
                 ? $message

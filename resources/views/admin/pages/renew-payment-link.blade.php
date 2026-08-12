@@ -116,7 +116,12 @@
                         </div>
                         @if (! $hasStripe && ! $hasPayPal)
                             <div class="alert alert-warning mb-0">
-                                No payment providers are enabled for this plan.
+                                @if (! ($planHasStripe ?? false) && ! ($planHasPayPal ?? false))
+                                    No payment providers are enabled for this plan.
+                                @else
+                                    No payment merchant is configured for this brand. Add Stripe/PayPal keys under
+                                    <strong>Admin → Payment Accounts</strong> before generating a link.
+                                @endif
                             </div>
                         @else
                             <div class="crm-paylink-provider mb-3">
@@ -181,9 +186,13 @@
                         <span class="crm-paylink-hint">
                             <i class="bi bi-shield-check"></i> Renewal checkout link
                         </span>
-                        <button type="submit" class="btn btn-crm-primary">
-                            <i class="bi bi-link-45deg me-1"></i> Generate link
-                        </button>
+                        @if (! $hasStripe && ! $hasPayPal)
+                            <button type="button" class="btn btn-crm-outline" disabled>Generate link</button>
+                        @else
+                            <button type="submit" class="btn btn-crm-primary">
+                                <i class="bi bi-link-45deg me-1"></i> Generate link
+                            </button>
+                        @endif
                     </div>
                 </form>
             </div>

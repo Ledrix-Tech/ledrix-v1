@@ -30,9 +30,11 @@ return [
     ],
 
     'stripe' => [
+        // Platform subscription Stripe: Super Admin → Payment Accounts.
+        // Brand CRM pay links use Account Keys, not these env values.
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
-        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET')
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
     // 'stripe' => [
@@ -70,25 +72,24 @@ return [
     ],
 
     'payoneer' => [
+        // Merchant fields: Super Admin → Payment Accounts (central DB). Env is optional fallback only.
         'receiver_email' => env('PAYONEER_RECEIVER_EMAIL'),
-        'receiver_name'  => env('PAYONEER_RECEIVER_NAME', 'Ledrix'),
+        'receiver_name'  => env('PAYONEER_RECEIVER_NAME'),
         'currency'       => env('PAYONEER_CURRENCY', 'USD'),
         'grace_days'     => (int) env('PAYONEER_GRACE_DAYS', 7),
         'trial_reminder_days' => (int) env('PAYONEER_TRIAL_REMINDER_DAYS', 3),
     ],
 
     /*
-    | JazzCash Merchant Gateway — tenant SaaS subscriptions (PKR).
-    | Sandbox: https://sandbox.jazzcash.com.pk/MerchantDashboard/
-    | Credentials go in .env (see JAZZCASH_* below).
+    | JazzCash — tenant SaaS subscriptions (PKR).
+    | Merchant credentials: Super Admin → Payment Accounts (central DB).
     */
     'jazzcash' => [
         'sandbox'          => (bool) env('JAZZCASH_SANDBOX', true),
-        // Public JazzCash sandbox demo credentials (from official docs) — replace with yours from Merchant Dashboard
-        'merchant_id'      => env('JAZZCASH_MERCHANT_ID', env('JAZZCASH_SANDBOX', true) ? '00127801' : null),
-        'password'         => env('JAZZCASH_PASSWORD', env('JAZZCASH_SANDBOX', true) ? '0123456789' : null),
-        'integrity_salt'   => env('JAZZCASH_INTEGRITY_SALT', env('JAZZCASH_SANDBOX', true) ? '0123456789' : null),
-        'return_url'       => env('JAZZCASH_RETURN_URL'), // defaults to APP_URL/billing/jazzcash/return
+        'merchant_id'      => env('JAZZCASH_MERCHANT_ID'),
+        'password'         => env('JAZZCASH_PASSWORD'),
+        'integrity_salt'   => env('JAZZCASH_INTEGRITY_SALT'),
+        'return_url'       => env('JAZZCASH_RETURN_URL'),
         'currency'         => env('JAZZCASH_CURRENCY', 'PKR'),
         'usd_to_pkr_rate'  => (float) env('JAZZCASH_USD_TO_PKR_RATE', 280),
         'trial_reminder_days' => (int) env('JAZZCASH_TRIAL_REMINDER_DAYS', 3),
@@ -104,12 +105,13 @@ return [
             'swift'          => env('BANK_TRANSFER_USD_SWIFT'),
         ],
         'pkr' => [
-            'bank_name'      => env('MEEZAN_BANK_NAME', env('BANK_TRANSFER_PKR_BANK_NAME', 'Meezan Bank')),
+            // Meezan merchant fields: Super Admin → Payment Accounts (central DB).
+            'bank_name'      => env('MEEZAN_BANK_NAME', env('BANK_TRANSFER_PKR_BANK_NAME')),
             'account_title'  => env('MEEZAN_ACCOUNT_TITLE', env('BANK_TRANSFER_PKR_ACCOUNT_TITLE')),
             'account_number' => env('MEEZAN_ACCOUNT_NUMBER', env('BANK_TRANSFER_PKR_ACCOUNT_NUMBER')),
             'iban'           => env('MEEZAN_IBAN', env('BANK_TRANSFER_PKR_IBAN')),
             'branch'         => env('MEEZAN_BRANCH', env('BANK_TRANSFER_PKR_BRANCH')),
-            'merchant_city'  => env('MEEZAN_MERCHANT_CITY', 'Karachi'),
+            'merchant_city'  => env('MEEZAN_MERCHANT_CITY'),
         ],
         'raast_account_tag' => env('RAAST_QR_ACCOUNT_TAG', '28'),
         'raast_qr_mode' => env('RAAST_QR_MODE', 'dynamic'), // dynamic | static
@@ -120,14 +122,12 @@ return [
     ],
 
     /*
-    | PayFast Pakistan — automated PKR checkout (cards, wallets, Raast).
-    | Sign up: https://gopayfast.com/ — link your Meezan account as settlement bank in their portal.
-    | API docs: https://gopayfast.com/docs/
+    | PayFast Pakistan — merchant credentials via Super Admin → Payment Accounts.
     */
     'payfast' => [
         'mode'          => env('PAYFAST_MODE', 'sandbox'),
         'merchant_id'   => env('PAYFAST_MERCHANT_ID'),
-        'merchant_name' => env('PAYFAST_MERCHANT_NAME', env('APP_NAME', 'Ledrix')),
+        'merchant_name' => env('PAYFAST_MERCHANT_NAME'),
         'secured_key'   => env('PAYFAST_SECURED_KEY'),
         'grant_type'    => env('PAYFAST_GRANT_TYPE', 'client_credentials'),
         'token_url'     => env('PAYFAST_TOKEN_URL'),

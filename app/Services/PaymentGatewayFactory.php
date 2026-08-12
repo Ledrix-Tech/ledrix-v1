@@ -12,11 +12,7 @@ class PaymentGatewayFactory
 {
     public function forProviderWithBrand(string $provider, Brand $brand): PaymentGateway
     {
-        $keys = AccountKey::withoutGlobalScopes()
-            ->where('brand_id', $brand->id)
-            ->where('module', 'ppc')
-            ->where('status', 'active')
-            ->first();
+        $keys = $this->activeKeysForBrand($brand, 'ppc');
 
         if (! $keys || ! $this->hasProviderKeys($keys, $provider)) {
             throw new \RuntimeException(
@@ -25,6 +21,43 @@ class PaymentGatewayFactory
         }
 
         return $this->buildGateway($provider, $keys);
+    }
+
+    /** Whether the brand has an active merchant AccountKey with usable secrets for the provider. */
+    public function brandHasProvider(Brand $brand, string $provider, string $module = 'ppc'): bool
+    {
+        $keys = $this->activeKeysForBrand($brand, $module);
+
+        return $keys !== null && $this->hasProviderKeys($keys, $provider);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function availableProvidersForBrand(Brand $brand, string $module = 'ppc'): array
+    {
+        $keys = $this->activeKeysForBrand($brand, $module);
+        if (! $keys) {
+            return [];
+        }
+
+        $out = [];
+        foreach (['stripe', 'paypal'] as $provider) {
+            if ($this->hasProviderKeys($keys, $provider)) {
+                $out[] = $provider;
+            }
+        }
+
+        return $out;
+    }
+
+    public function activeKeysForBrand(Brand $brand, string $module = 'ppc'): ?AccountKey
+    {
+        return AccountKey::withoutGlobalScopes()
+            ->where('brand_id', $brand->id)
+            ->where('module', $module)
+            ->where('status', 'active')
+            ->first();
     }
 
     public function forProvider(string $provider): PaymentGateway
@@ -55,7 +88,7 @@ class PaymentGatewayFactory
         };
     }
 
-    protected function hasProviderKeys(AccountKey $keys, string $provider): bool
+    public function hasProviderKeys(AccountKey $keys, string $provider): bool
     {
         return match ($provider) {
             'stripe' => ! empty($keys->stripe_secret_key),

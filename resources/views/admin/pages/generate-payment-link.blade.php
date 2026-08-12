@@ -133,7 +133,12 @@
                         </div>
                         @if (! $hasStripe && ! $hasPayPal)
                             <div class="alert alert-warning mb-0">
-                                No payment providers are enabled for this plan. Enable Stripe and/or PayPal in Super Admin.
+                                @if (! ($planHasStripe ?? false) && ! ($planHasPayPal ?? false))
+                                    No payment providers are enabled for this plan. Enable Stripe and/or PayPal in Super Admin.
+                                @else
+                                    No payment merchant is configured for this brand. Add Stripe/PayPal keys under
+                                    <strong>Admin → Payment Accounts</strong> before generating a link.
+                                @endif
                             </div>
                         @else
                             <div class="crm-paylink-provider mb-3">
@@ -220,6 +225,8 @@
                         </span>
                         @if ($isOrder && $dueCents === 0 && ! $isRenewal)
                             <button type="button" class="btn btn-crm-outline" disabled>Paid in full</button>
+                        @elseif (! $hasStripe && ! $hasPayPal)
+                            <button type="button" class="btn btn-crm-outline" disabled>Generate link</button>
                         @else
                             <button type="submit" class="btn btn-crm-primary">
                                 <i class="bi bi-link-45deg me-1"></i> Generate link
