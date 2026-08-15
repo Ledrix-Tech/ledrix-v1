@@ -1,0 +1,33 @@
+{
+  "id": "/super-admin/",
+  "name": "Ledrix Super Admin",
+  "short_name": "Ledrix SA",
+  "description": "Installable Super Admin console for Ledrix platform management.",
+  "start_url": "/super-admin/dashboard",
+  "scope": "/super-admin/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#312e81",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/super-admin/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/super-admin/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/super-admin/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -7,6 +7,13 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Ledrix Super Admin')</title>
+    <meta name="theme-color" content="#312e81">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Ledrix SA">
+    <link rel="manifest" href="{{ asset('super-admin/manifest.webmanifest') }}">
+    <link rel="apple-touch-icon" href="{{ asset('super-admin/icon-192.png') }}">
     <link rel="icon" href="{{ asset(config('branding.fav-icon')) }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -41,6 +48,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/js/toastr.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ asset('super-admin-assets/js/app.js') }}" defer></script>
+    <script src="{{ asset('super-admin/pwa-register.js') }}" defer></script>
     @stack('scripts')
 </body>
 
