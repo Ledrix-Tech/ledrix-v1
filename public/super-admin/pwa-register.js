@@ -8,7 +8,7 @@
   }
 
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/super-admin/sw.js', { scope: '/super-admin/' }).catch(function () {
+    navigator.serviceWorker.register('/super-admin/sw.js?v=3', { scope: '/super-admin/' }).catch(function () {
       // Ignore registration failures (HTTP local, unsupported, etc.)
     });
   });

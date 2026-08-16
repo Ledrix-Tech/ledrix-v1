@@ -1,8 +1,8 @@
 /* Ledrix Super Admin PWA — network-first; does not change app behavior. */
-const CACHE = 'ledrix-sa-pwa-v1';
+const CACHE = 'ledrix-sa-pwa-v3';
 const PRECACHE = [
-  '/super-admin/icon-192.png',
-  '/super-admin/icon-512.png',
+  '/super-admin/icon-192.png?v=3',
+  '/super-admin/icon-512.png?v=3',
   '/super-admin/manifest.webmanifest',
 ];
 
@@ -28,14 +28,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first only for PWA static assets under /super-admin/
+  // Network-first for icons/manifest so favicon updates are not stuck on the old L tile.
   if (
     url.pathname.startsWith('/super-admin/icon-') ||
-    url.pathname.endsWith('/manifest.webmanifest') ||
-    url.pathname.endsWith('/sw.js')
+    url.pathname.endsWith('/manifest.webmanifest')
   ) {
     event.respondWith(
-      caches.match(event.request).then((cached) => cached || fetch(event.request))
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
   }
 });

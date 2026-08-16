@@ -10,8 +10,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Ledrix SA">
-    <link rel="manifest" href="{{ asset('super-admin/manifest.webmanifest') }}">
-    <link rel="apple-touch-icon" href="{{ asset('super-admin/icon-192.png') }}">
+    <link rel="manifest" href="{{ asset('super-admin/manifest.webmanifest') }}?v=3">
+    <link rel="apple-touch-icon" href="{{ asset('super-admin/icon-192.png') }}?v=3">
     <link rel="icon" href="{{ asset(config('branding.fav-icon')) }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/css/toastr.css" rel="stylesheet">
