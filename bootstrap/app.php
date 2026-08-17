@@ -50,6 +50,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\Illuminate\Foundation\Http\Middleware\TrimStrings::class);
         $middleware->append(\Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class);
 
+        // Pixel / ads cookies are set by Facebook/Google/TikTok JS — do not encrypt them.
+        $middleware->encryptCookies(except: [
+            '_fbp',
+            '_fbc',
+            '_ttp',
+            '_gcl_aw',
+            '_gcl_gs',
+        ]);
+
         // Web group
         $middleware->group('web', [
             \App\Http\Middleware\NormalizeDevelopmentHost::class,

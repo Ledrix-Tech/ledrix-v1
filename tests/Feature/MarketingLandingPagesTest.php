@@ -48,6 +48,39 @@ class MarketingLandingPagesTest extends TestCase
         $this->assertSame('/lp/agency-crm-trial', session('marketing_landing_path'));
     }
 
+    public function test_homepage_captures_social_click_ids_and_first_landing(): void
+    {
+        $this->get('/?fbclid=FbClick123&ttclid=TtClick456&utm_source=instagram&utm_medium=paid')
+            ->assertOk();
+
+        $this->assertSame('FbClick123', session('marketing_attribution.fbclid'));
+        $this->assertSame('TtClick456', session('marketing_attribution.ttclid'));
+        $this->assertSame('instagram', session('marketing_attribution.utm_source'));
+        $this->assertSame('/', session('marketing_landing_path'));
+        $this->assertNotEmpty(session('marketing_attribution._fbc'));
+        $this->assertSame('paid_meta', \App\Support\MarketingAttribution::source());
+    }
+
+    public function test_organic_social_referrer_is_classified_without_ads_params(): void
+    {
+        $this->withHeaders(['Referer' => 'https://www.linkedin.com/feed/'])
+            ->get('/')
+            ->assertOk();
+
+        $this->assertSame('www.linkedin.com', session('marketing_attribution.referrer_host'));
+        $this->assertSame('organic_linkedin', \App\Support\MarketingAttribution::source());
+    }
+
+    public function test_first_touch_click_ids_are_not_overwritten(): void
+    {
+        $this->get('/?fbclid=FirstClick')->assertOk();
+        $this->get('/pricing?fbclid=SecondClick&gclid=GoogleLater')->assertOk();
+
+        $this->assertSame('FirstClick', session('marketing_attribution.fbclid'));
+        $this->assertSame('GoogleLater', session('marketing_attribution.gclid'));
+        $this->assertSame('/', session('marketing_landing_path'));
+    }
+
     public function test_demo_landing_stores_lead_and_redirects_to_thanks(): void
     {
         $this->get(route('lp.demo', ['utm_source' => 'google']))->assertOk();

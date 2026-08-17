@@ -24,6 +24,7 @@
                             <th>Trial</th>
                             <th>Verified</th>
                             <th>Registered</th>
+                            <th>Source</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -58,6 +59,17 @@
                                     @endif
                                 </td>
                                 <td data-label="Registered">{{ $company->created_at?->format('M d, Y') ?? '—' }}</td>
+                                <td data-label="Source">
+                                    @php $signupSource = data_get($company->meta, 'registered_from'); @endphp
+                                    @if ($signupSource)
+                                        <span class="badge bg-info text-dark">{{ str_replace('_', ' ', $signupSource) }}</span>
+                                        @if (data_get($company->meta, 'landing_path'))
+                                            <br><small class="text-muted">{{ data_get($company->meta, 'landing_path') }}</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 <td data-label="Status">
                                     @php
                                         $statusClass = match ($company->status) {
@@ -85,7 +97,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">No tenants found.</td>
+                                <td colspan="10" class="text-center text-muted py-4">No tenants found.</td>
                             </tr>
                         @endforelse
                     </tbody>

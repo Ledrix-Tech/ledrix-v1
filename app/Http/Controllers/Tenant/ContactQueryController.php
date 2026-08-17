@@ -36,6 +36,17 @@ class ContactQueryController extends Controller
         DB::beginTransaction();
 
         try {
+            $message = $validated['message'];
+            $attribution = \App\Support\MarketingAttribution::summaryLine();
+            $landing = \App\Support\MarketingAttribution::landingPath();
+            $metaBits = array_filter([
+                $landing ? 'landing='.$landing : null,
+                $attribution !== '' ? 'attr: '.$attribution : null,
+            ]);
+            if ($metaBits !== []) {
+                $message = trim($message."\n\n".'[Marketing] '.implode(' · ', $metaBits));
+            }
+
             Contact::create([
                 'name'          => $validated['name'],
                 'company'       => $validated['company'] ?? null,
@@ -43,7 +54,7 @@ class ContactQueryController extends Controller
                 'phone'         => $validated['phone'] ?? null,
                 'company_size'  => $validated['company_size'] ?? null,
                 'inquiry_type'  => $validated['inquiry_type'],
-                'message'       => $validated['message'],
+                'message'       => $message,
                 'status'        => 'new',
             ]);
 
@@ -53,7 +64,7 @@ class ContactQueryController extends Controller
                     [
                         'name'        => $validated['name'],
                         'company'     => $validated['company'] ?? null,
-                        'description' => $validated['message'],
+                        'description' => $message,
                         'status'      => 'pending',
                     ]
                 );

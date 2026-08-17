@@ -62,7 +62,7 @@ class RegisterTenantService
                 'status'          => 'inactive',
                 'registered_ip'   => request()->ip(),
                 'meta'            => array_filter([
-                    'registered_from' => MarketingAttribution::landingPath() ? 'paid_landing' : 'website',
+                    'registered_from' => MarketingAttribution::source(),
                     'billing_cycle'   => $billingCycle,
                     'landing_path'    => MarketingAttribution::landingPath(),
                     'attribution'     => MarketingAttribution::all() ?: null,
@@ -84,9 +84,7 @@ class RegisterTenantService
                 'trial_end'    => $trialEndsAt->toDateString(),
                 'status'       => 'trialing',
                 'renewed_by'   => 'tenant',
-                'conversion_source' => ($attribution['utm_source'] ?? null)
-                    ? 'paid_'.$attribution['utm_source']
-                    : 'registration',
+                'conversion_source' => MarketingAttribution::conversionSource(),
                 'meta'         => array_filter([
                     'trial_days'  => $trialDays,
                     'attribution' => $attribution ?: null,

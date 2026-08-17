@@ -66,13 +66,24 @@
                                 </td>
                                 <td data-label="Company">{{ $demo->company ?? '—' }}</td>
                                 <td data-label="Source">
-                                    @if ($demo->marketingSource())
-                                        <span class="badge bg-primary">{{ $demo->marketingSource() }}</span>
-                                        @if ($demo->marketingLanding())
-                                            <br><small class="text-muted">{{ $demo->marketingLanding() }}</small>
-                                        @endif
+                                    @php
+                                        $mkt = \App\Support\MarketingAttribution::fromEmbeddedNotes($demo->description);
+                                        $sourceBadge = $mkt['source'] ?? $demo->marketingSource();
+                                    @endphp
+                                    @if ($sourceBadge)
+                                        <span class="badge bg-primary">{{ str_replace('_', ' ', $sourceBadge) }}</span>
                                     @else
-                                        <span class="text-muted">marketing</span>
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                    @if ($mkt['landing'] ?? $demo->marketingLanding())
+                                        <br><small class="text-muted">{{ $mkt['landing'] ?? $demo->marketingLanding() }}</small>
+                                    @endif
+                                    @if (($mkt['pairs']['fbclid'] ?? null) || ($mkt['pairs']['gclid'] ?? null) || ($mkt['pairs']['ttclid'] ?? null))
+                                        <br><small class="text-muted">
+                                            @if (! empty($mkt['pairs']['fbclid'])) FB {{ \Illuminate\Support\Str::limit($mkt['pairs']['fbclid'], 12) }} @endif
+                                            @if (! empty($mkt['pairs']['gclid'])) · G {{ \Illuminate\Support\Str::limit($mkt['pairs']['gclid'], 12) }} @endif
+                                            @if (! empty($mkt['pairs']['ttclid'])) · TT {{ \Illuminate\Support\Str::limit($mkt['pairs']['ttclid'], 12) }} @endif
+                                        </small>
                                     @endif
                                 </td>
                                 <td data-label="Notes">
@@ -147,6 +158,14 @@
                                                     <label class="form-label">Expires at</label>
                                                     <input type="date" name="demo_expires_at" class="form-control"
                                                         value="{{ $demo->demo_expires_at?->format('Y-m-d') }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Marketing attribution</label>
+                                                    @include('central.partials.attribution-block', [
+                                                        'source' => $mkt['source'] ?? $demo->marketingSource(),
+                                                        'landingPath' => $mkt['landing'] ?? $demo->marketingLanding(),
+                                                        'attribution' => $mkt['pairs'] ?? [],
+                                                    ])
                                                 </div>
                                                 <div class="mb-0">
                                                     <label class="form-label">Admin note</label>

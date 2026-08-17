@@ -11,9 +11,7 @@ class CaptureMarketingAttribution
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->isMethod('GET')) {
-            MarketingAttribution::capture($request);
-        }
+        MarketingAttribution::capture($request);
 
         return $next($request);
     }

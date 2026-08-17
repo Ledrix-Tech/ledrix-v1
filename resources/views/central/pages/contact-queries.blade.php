@@ -22,6 +22,7 @@
                             <th>Company</th>
                             <th>Phone</th>
                             <th>Inquiry</th>
+                            <th>Source</th>
                             <th>Status</th>
                             <th>Submitted</th>
                             <th>Action</th>
@@ -45,7 +46,24 @@
                                 <td data-label="Inquiry">
                                     <span class="badge bg-primary">{{ ucwords(str_replace('_', ' ', $query->inquiry_type)) }}</span>
                                     @if ($query->message)
-                                        <br><small class="text-muted">{{ \Illuminate\Support\Str::limit($query->message, 50) }}</small>
+                                        @php
+                                            $plain = preg_replace('/\n*\s*\[Marketing\].*$/s', '', (string) $query->message) ?? '';
+                                        @endphp
+                                        <br><small class="text-muted">{{ \Illuminate\Support\Str::limit(trim($plain), 50) }}</small>
+                                    @endif
+                                </td>
+                                <td data-label="Source">
+                                    @php $mkt = \App\Support\MarketingAttribution::fromEmbeddedNotes($query->message); @endphp
+                                    @if ($mkt['source'])
+                                        <span class="badge bg-info text-dark">{{ str_replace('_', ' ', $mkt['source']) }}</span>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                    @if ($mkt['landing'])
+                                        <br><small class="text-muted">{{ $mkt['landing'] }}</small>
+                                    @endif
+                                    @if ($mkt['pairs'] !== [])
+                                        <br><small class="text-muted">{{ collect($mkt['pairs'])->except(['source', 'referrer'])->map(fn ($v, $k) => $k.'='.\Illuminate\Support\Str::limit($v, 18))->take(4)->implode(' · ') }}</small>
                                     @endif
                                 </td>
                                 <td data-label="Status">
@@ -81,7 +99,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">No contact inquiries found.</td>
+                                <td colspan="9" class="text-center text-muted py-4">No contact inquiries found.</td>
                             </tr>
                         @endforelse
                     </tbody>

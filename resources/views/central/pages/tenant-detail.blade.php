@@ -36,33 +36,6 @@
                     @endif
                 </p>
                 <p><strong>Registered:</strong> {{ $tenant->created_at?->format('M d, Y H:i') ?? '—' }}</p>
-                @php
-                    $registeredFrom = data_get($tenant->meta, 'registered_from');
-                    $landingPath = data_get($tenant->meta, 'landing_path');
-                    $attribution = data_get($tenant->meta, 'attribution', []);
-                    $conversionSource = $tenant->activeMembership?->conversion_source
-                        ?? optional($tenant->memberships->sortByDesc(fn ($m) => (string) $m->start_date)->first())->conversion_source;
-                @endphp
-                <p><strong>Signup source:</strong>
-                    @if ($registeredFrom)
-                        <span class="badge bg-info text-dark">{{ $registeredFrom }}</span>
-                    @else
-                        <span class="text-muted">—</span>
-                    @endif
-                    @if ($landingPath)
-                        <small class="text-muted ms-1">{{ $landingPath }}</small>
-                    @endif
-                </p>
-                @if ($conversionSource)
-                    <p><strong>Conversion:</strong> <code>{{ $conversionSource }}</code></p>
-                @endif
-                @if (is_array($attribution) && $attribution !== [])
-                    <p class="mb-2"><strong>Ad attribution:</strong>
-                        <small class="text-muted">
-                            {{ collect($attribution)->map(fn ($v, $k) => "{$k}={$v}")->implode(' · ') }}
-                        </small>
-                    </p>
-                @endif
                 <p><strong>Email verified:</strong>
                     @if ($tenant->email_verified_at)
                         <span class="badge bg-success">{{ $tenant->email_verified_at->format('M d, Y') }}</span>
@@ -108,6 +81,29 @@
                     <p class="mb-0"><strong>Trial ends:</strong> {{ $tenant->trial_ends_at?->format('M d, Y') }} ({{ $tenant->trialDaysLeft() }} days left)</p>
                 @endif
             </div>
+        </div>
+    </div>
+
+    @php
+        $registeredFrom = data_get($tenant->meta, 'registered_from');
+        $landingPath = data_get($tenant->meta, 'landing_path');
+        $attribution = data_get($tenant->meta, 'attribution', []);
+        $conversionSource = $tenant->activeMembership?->conversion_source
+            ?? optional($tenant->memberships->sortByDesc(fn ($m) => (string) $m->start_date)->first())->conversion_source;
+    @endphp
+    <div class="sa-card mb-4">
+        <div class="sa-card-header">
+            <h4 class="mb-0">Marketing attribution</h4>
+        </div>
+        <div class="sa-card-body">
+            @if ($conversionSource)
+                <p class="mb-2"><strong>Conversion:</strong> <code>{{ $conversionSource }}</code></p>
+            @endif
+            @include('central.partials.attribution-block', [
+                'source' => $registeredFrom,
+                'landingPath' => $landingPath,
+                'attribution' => is_array($attribution) ? $attribution : [],
+            ])
         </div>
     </div>
 
