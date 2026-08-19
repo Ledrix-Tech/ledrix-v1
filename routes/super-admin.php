@@ -14,6 +14,7 @@ use App\Http\Controllers\Central\SuperDashboardController;
 use App\Http\Controllers\Central\AuthorizeController;
 use App\Http\Controllers\Central\SystemAnnouncementController;
 use App\Http\Controllers\Central\TeamController;
+use App\Http\Controllers\Central\TenantDataExportController;
 use App\Http\Controllers\Central\TenantApiTokenController;
 use App\Http\Controllers\Central\TenantFeatureController;
 use App\Http\Controllers\Central\TwoFactorController;
@@ -68,6 +69,11 @@ Route::group(['prefix' => 'super-admin', 'namespace' => 'SuperAdmin'], function 
         Route::post('/support-tickets/{id}/reply', [PlatformSupportTicketController::class, 'reply'])->name('super-admin.support-tickets.reply')->whereNumber('id');
         Route::post('/support-tickets/{id}/status', [PlatformSupportTicketController::class, 'updateStatus'])->name('super-admin.support-tickets.status')->whereNumber('id');
 
+        Route::get('/data-exports', [TenantDataExportController::class, 'index'])->name('super-admin.data-exports.get');
+        Route::get('/data-exports/{id}/download', [TenantDataExportController::class, 'download'])
+            ->name('super-admin.data-exports.download')
+            ->whereNumber('id');
+
         Route::get('/demo-requests', [DemoRequestController::class, 'index'])->name('super-admin.demo-requests.get');
         Route::put('/demo-requests/{id}', [DemoRequestController::class, 'update'])->name('super-admin.demo-requests.update')->whereNumber('id');
 
@@ -84,6 +90,15 @@ Route::group(['prefix' => 'super-admin', 'namespace' => 'SuperAdmin'], function 
         Route::delete('/pricing-package/{id}', [PricingController::class, 'destroy'])->name('super-admin.pricing-packages.destroy')->whereNumber('id');
 
         Route::post('/company-status', [MembershipController::class, 'superTenantStatus'])->name('super-company.company-status');
+        Route::post('/company/{tenantId}/data-export', [TenantDataExportController::class, 'generateNow'])
+            ->name('super-admin.tenant.data-export.generate')
+            ->whereNumber('tenantId');
+        Route::post('/data-exports/{id}/approve', [TenantDataExportController::class, 'approve'])
+            ->name('super-admin.data-exports.approve')
+            ->whereNumber('id');
+        Route::post('/data-exports/{id}/reject', [TenantDataExportController::class, 'reject'])
+            ->name('super-admin.data-exports.reject')
+            ->whereNumber('id');
         Route::put('/company/{tenantId}/features', [TenantFeatureController::class, 'update'])->name('super-admin.tenant.features.update')->whereNumber('tenantId');
         Route::delete('/company/{tenantId}/features', [TenantFeatureController::class, 'reset'])->name('super-admin.tenant.features.reset')->whereNumber('tenantId');
 

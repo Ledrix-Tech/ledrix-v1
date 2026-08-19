@@ -14,6 +14,7 @@
             <a href="{{ org_route('plan') }}" class="btn btn-outline-secondary btn-sm">Plan</a>
             <a href="{{ org_route('settings') }}" class="btn btn-outline-secondary btn-sm">Settings</a>
             <a href="{{ org_route('audit-logs') }}" class="btn btn-outline-secondary btn-sm">Audit log</a>
+            <a href="{{ org_route('data-export') }}" class="btn btn-outline-secondary btn-sm">Data export</a>
             <a href="{{ org_route('billing') }}" class="btn btn-outline-primary btn-sm">Billing</a>
             <a href="{{ org_route('support.index') }}" class="btn btn-outline-secondary btn-sm">Support</a>
             <a href="{{ org_route('referrals') }}" class="btn btn-outline-secondary btn-sm">Referrals</a>

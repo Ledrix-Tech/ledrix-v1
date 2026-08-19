@@ -63,7 +63,6 @@ Pricing CRUD · platform Payment Accounts · feature/limit overrides · confirm 
 | F-12 | Credit notes / void / refund | soon | todo | Void issued; refund paid; credit note doc |
 | F-13 | Force owner 2FA | soon | todo | SA + Admin 2FA optional today; enforce for owner in production |
 | F-14 | Custom domain SA provisioning UX | soon | todo | Tenant/Admin self-serve domain done; SA set/verify UX still missing |
-| F-15 | Tenant export from Super Admin | soon | todo | Zip profile, memberships, invoices, payments, CRM summary |
 | F-16 | Tenant maintenance broadcast | soon | todo | Distinct from `artisan down` / section flags |
 | F-17 | Deeper SA / billing automated tests | soon | todo | Activate E2E, webhooks, dunning, dual-org billing |
 | F-18 | Orphan / dead-code cleanup | cleanup | todo | Unused Central controllers/views; seller RoughController leftovers; half-dead Sanctum client API |

@@ -75,6 +75,13 @@
             </a>
         </li>
         <li>
+            <a class="sa-nav-link {{ str_starts_with((string) $route, 'super-admin.data-exports') ? 'active' : '' }}"
+                href="{{ route('super-admin.data-exports.get') }}">
+                <i class="bi bi-file-earmark-zip"></i>
+                <span>Data Exports</span>
+            </a>
+        </li>
+        <li>
             <a class="sa-nav-link {{ $route === 'super-admin.announcements.get' ? 'active' : '' }}"
                 href="{{ route('super-admin.announcements.get') }}">
                 <i class="bi bi-megaphone"></i>

@@ -18,6 +18,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <h4 class="mb-0">Workspace Overview</h4>
                 <div class="d-flex gap-2">
+                    <a href="{{ route('tenant.data-export') }}" class="btn btn-outline-secondary btn-sm">Data export</a>
                     <a href="{{ route('tenant.referrals') }}" class="btn btn-outline-secondary btn-sm">Referrals</a>
                     <a href="{{ route('tenant.support.index') }}" class="btn btn-outline-secondary btn-sm">Support</a>
                     <a href="{{ route('tenant.billing') }}" class="btn btn-outline-primary btn-sm">Billing</a>

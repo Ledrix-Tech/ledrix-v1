@@ -20,6 +20,7 @@ use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\JazzCashBillingController;
 use App\Http\Controllers\Tenant\OrganizationApiTokenController;
 use App\Http\Controllers\Tenant\OrganizationAuditLogController;
+use App\Http\Controllers\Tenant\OrganizationDataExportController;
 use App\Http\Controllers\Tenant\OrganizationDomainController;
 use App\Http\Controllers\Tenant\OrganizationOverviewController;
 use App\Http\Controllers\Tenant\OrganizationPlanController;
@@ -132,6 +133,13 @@ Route::group(['prefix' => 'admin'], function () {
             Route::put('/settings', [OrganizationSettingsController::class, 'update'])->name('settings.update');
 
             Route::get('/audit-logs', [OrganizationAuditLogController::class, 'index'])->name('audit-logs');
+
+            Route::get('/data-export', [OrganizationDataExportController::class, 'index'])->name('data-export');
+            Route::post('/data-export', [OrganizationDataExportController::class, 'store'])->name('data-export.store');
+            Route::get('/data-export/{export}/download', [OrganizationDataExportController::class, 'download'])
+                ->middleware('signed')
+                ->name('data-export.download')
+                ->whereNumber('export');
 
             Route::middleware('tenant.feature:custom_domain|white_label')->group(function () {
                 Route::get('/domain', [OrganizationDomainController::class, 'edit'])->name('domain');

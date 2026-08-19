@@ -159,6 +159,12 @@
                         </a>
                     </li>
                     <li>
+                        <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.data-export') ? 'active' : '' }}"
+                            href="{{ route('admin.org.data-export') }}">
+                            <i class="bi bi-box-arrow-down"></i><span>Data export</span>
+                        </a>
+                    </li>
+                    <li>
                         <a class="crm-nav-link {{ str_starts_with($route, 'admin.org.team') ? 'active' : '' }}"
                             href="{{ route('admin.org.team') }}">
                             <i class="bi bi-people"></i><span>Team</span>

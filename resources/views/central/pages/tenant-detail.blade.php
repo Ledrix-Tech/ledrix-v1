@@ -11,6 +11,12 @@
             <h1>{{ $tenant->name }}</h1>
             <p>{{ $tenant->slug }} · ID #{{ $tenant->id }}</p>
         </div>
+        @if ($canManage)
+            <form method="POST" action="{{ route('super-admin.tenant.data-export.generate', $tenant->id) }}">
+                @csrf
+                <button type="submit" class="btn btn-sa-primary">Generate export now</button>
+            </form>
+        @endif
     </div>
 
     <div class="sa-detail-grid">

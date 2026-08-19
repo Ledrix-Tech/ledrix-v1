@@ -48,3 +48,6 @@ Schedule::command('tenants:process-jazzcash-renewals')
 
 Schedule::command('queue:prune-failed', ['--hours' => 168])
     ->weeklyOn(0, '03:30');
+
+Schedule::command('tenants:purge-data-exports')
+    ->dailyAt('04:00');

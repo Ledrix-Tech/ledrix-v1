@@ -11,6 +11,7 @@ use App\Http\Controllers\Tenant\OrganizationPlanController;
 use App\Http\Controllers\Tenant\OrganizationSettingsController;
 use App\Http\Controllers\Tenant\OrganizationDomainController;
 use App\Http\Controllers\Tenant\OrganizationAuditLogController;
+use App\Http\Controllers\Tenant\OrganizationDataExportController;
 use App\Http\Controllers\Tenant\PayFastBillingController;
 use App\Http\Controllers\Tenant\PlatformSupportController;
 use App\Http\Controllers\Tenant\RegistrationController;
@@ -78,6 +79,15 @@ Route::middleware('tenant')->group(function () {
 
     Route::get('/tenant-profile/audit-logs', [OrganizationAuditLogController::class, 'index'])
         ->name('tenant.audit-logs');
+
+    Route::get('/tenant-profile/data-export', [OrganizationDataExportController::class, 'index'])
+        ->name('tenant.data-export');
+    Route::post('/tenant-profile/data-export', [OrganizationDataExportController::class, 'store'])
+        ->name('tenant.data-export.store');
+    Route::get('/tenant-profile/data-export/{export}/download', [OrganizationDataExportController::class, 'download'])
+        ->middleware('signed')
+        ->name('tenant.data-export.download')
+        ->whereNumber('export');
 
     Route::middleware('tenant.feature:custom_domain|white_label')->group(function () {
         Route::get('/tenant-profile/domain', [OrganizationDomainController::class, 'edit'])
